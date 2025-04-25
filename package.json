@@ -1,0 +1,37 @@
+{
+  "name": "vite-console-plugin",
+  "version": "1.0.0",
+  "description": "Vite 启动台控制台美化与提示插件",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --dts --format cjs,esm",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "vite": "^6.3.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "vite": ">=4.0.0"
+  },
+  "keywords": [
+    "vite",
+    "plugin",
+    "console",
+    "banner"
+  ],
+  "author": "CHENY",
+  "license": "MIT"
+}

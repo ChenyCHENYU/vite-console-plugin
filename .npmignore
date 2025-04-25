@@ -1,0 +1,30 @@
+# 不需要发布的源码和配置
+src/
+test/
+tests/
+__tests__/
+coverage/
+node_modules/
+example/
+examples/
+.vscode/
+.idea/
+*.log
+*.tsbuildinfo
+
+# 构建工具和配置
+tsconfig.json
+tsconfig.*.json
+tsup.config.js
+tsup.config.ts
+vite.config.ts
+vite.config.js
+*.local.*
+
+# 其他常见忽略项
+.git
+.gitignore
+.npmignore
+.editorconfig
+.env*
+.DS_Store
