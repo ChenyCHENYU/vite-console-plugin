@@ -91,7 +91,7 @@ function viteConsolePlugin(options = {}) {
       });
       const originalInfo = server.config.logger.info.bind(server.config.logger);
       server.config.logger.info = (msg, opts) => {
-        if (msg.includes("Local:") || msg.includes("Network:") || msg.includes("Vue DevTools") || msg.includes("UnoCSS Inspector")) {
+        if (msg.includes("Local:") || msg.includes("Network:") || msg.includes("Vue DevTools") || msg.includes("UnoCSS Inspector") || msg.includes("press h + enter") || msg.includes("use --host to expose") || msg.includes("Press Alt") || msg.includes("Open http://") || msg.includes("__devtools__") || msg.includes("__unocss") || msg.includes("as a separate window") || msg.includes("to toggle the Vue DevTools")) {
           return;
         }
         originalInfo(msg, opts);
@@ -116,54 +116,48 @@ function viteConsolePlugin(options = {}) {
               minute: "2-digit",
               second: "2-digit"
             });
+            const port = server.config.server.port || 3e3;
+            const host = server.config.server.host || "localhost";
+            const localUrl = `http://${host}:${port}/`;
+            const networkUrl = server.resolvedUrls?.network?.[0] || "\u9700\u8981 --host \u53C2\u6570\u542F\u7528";
             console.log("");
-            originalInfo(`${colors.cyan}${colors.bright}\u256D\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256E${colors.reset}`);
-            originalInfo(`${colors.cyan}\u2502                                                 \u2502${colors.reset}`);
-            originalInfo(`${colors.cyan}\u2502  ${icons.rocket} ${colors.white}${colors.bright}${config.systemName}${colors.reset} ${colors.gray}${config.description}${colors.reset}${" ".repeat(Math.max(0, 35 - config.systemName.length - config.description.length))}${colors.cyan}\u2502${colors.reset}`);
-            const serverAddress = server.resolvedUrls?.local?.[0] || "http://localhost:3000";
-            const networkAddress = server.resolvedUrls?.network?.[0] || "\u672A\u914D\u7F6E\u7F51\u7EDC\u8BBF\u95EE";
-            originalInfo(`${colors.cyan}\u2502                                                 \u2502${colors.reset}`);
-            originalInfo(`${colors.cyan}\u251C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524${colors.reset}`);
-            originalInfo(`${colors.cyan}\u2502  \u{1F310} ${colors.white}\u672C\u5730\u8BBF\u95EE:${colors.reset} ${colors.green}${colors.bright}${serverAddress}${colors.reset}${" ".repeat(Math.max(0, 32 - serverAddress.length))}${colors.cyan}\u2502${colors.reset}`);
-            if (networkAddress !== "\u672A\u914D\u7F6E\u7F51\u7EDC\u8BBF\u95EE") {
-              originalInfo(`${colors.cyan}\u2502  \u{1F4E1} ${colors.white}\u7F51\u7EDC\u8BBF\u95EE:${colors.reset} ${colors.blue}${networkAddress}${colors.reset}${" ".repeat(Math.max(0, 32 - networkAddress.length))}${colors.cyan}\u2502${colors.reset}`);
+            console.log(`${colors.cyan}${colors.bright}\u256D\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256E${colors.reset}`);
+            console.log(`${colors.cyan}\u2502                                                 \u2502${colors.reset}`);
+            console.log(`${colors.cyan}\u2502  ${icons.rocket} ${colors.white}${colors.bright}${config.systemName}${colors.reset} ${colors.gray}${config.description}${colors.reset}${" ".repeat(Math.max(0, 35 - config.systemName.length - config.description.length))}${colors.cyan}\u2502${colors.reset}`);
+            console.log(`${colors.cyan}\u2502                                                 \u2502${colors.reset}`);
+            console.log(`${colors.cyan}\u251C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524${colors.reset}`);
+            console.log(`${colors.cyan}\u2502  ${icons.local} ${colors.white}\u672C\u5730\u8BBF\u95EE:${colors.reset} ${colors.green}${colors.bright}${localUrl}${colors.reset}${" ".repeat(Math.max(0, 32 - localUrl.length))}${colors.cyan}\u2502${colors.reset}`);
+            if (!networkUrl.includes("\u9700\u8981")) {
+              console.log(`${colors.cyan}\u2502  ${icons.network} ${colors.white}\u7F51\u7EDC\u8BBF\u95EE:${colors.reset} ${colors.blue}${networkUrl}${colors.reset}${" ".repeat(Math.max(0, 32 - networkUrl.length))}${colors.cyan}\u2502${colors.reset}`);
+            } else {
+              console.log(`${colors.cyan}\u2502  ${icons.network} ${colors.white}\u7F51\u7EDC\u8BBF\u95EE:${colors.reset} ${colors.gray}${networkUrl}${colors.reset}${" ".repeat(Math.max(0, 32 - networkUrl.length))}${colors.cyan}\u2502${colors.reset}`);
             }
-            originalInfo(`${colors.cyan}\u2502  \u{1F527} ${colors.white}Vue DevTools:${colors.reset} ${colors.magenta}\u5DF2\u542F\u7528${colors.reset}${" ".repeat(26)}${colors.cyan}\u2502${colors.reset}`);
-            originalInfo(`${colors.cyan}\u2502  \u{1F50D} ${colors.white}UnoCSS Inspector:${colors.reset} ${colors.magenta}\u5DF2\u542F\u7528${colors.reset}${" ".repeat(21)}${colors.cyan}\u2502${colors.reset}`);
-            originalInfo(`${colors.cyan}\u251C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524${colors.reset}`);
+            console.log(`${colors.cyan}\u2502  ${icons.devtools} ${colors.white}Vue DevTools:${colors.reset} ${colors.magenta}\u5DF2\u542F\u7528${colors.reset}${" ".repeat(26)}${colors.cyan}\u2502${colors.reset}`);
+            console.log(`${colors.cyan}\u2502  ${icons.inspector} ${colors.white}UnoCSS Inspector:${colors.reset} ${colors.magenta}\u5DF2\u542F\u7528${colors.reset}${" ".repeat(21)}${colors.cyan}\u2502${colors.reset}`);
+            console.log(`${colors.cyan}\u251C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524${colors.reset}`);
             if (config.autoVersion) {
-              originalInfo(`${colors.cyan}\u2502  ${icons.package} ${colors.white}\u7248\u672C\u53F7:${colors.reset} ${colors.green}${colors.bright}v${version}${colors.reset}${" ".repeat(Math.max(0, 33 - version.length))}${colors.cyan}\u2502${colors.reset}`);
+              console.log(`${colors.cyan}\u2502  ${icons.package} ${colors.white}\u7248\u672C\u53F7:${colors.reset} ${colors.green}${colors.bright}v${version}${colors.reset}${" ".repeat(Math.max(0, 33 - version.length))}${colors.cyan}\u2502${colors.reset}`);
             }
-            originalInfo(`${colors.cyan}\u2502  ${icons.time} ${colors.white}\u542F\u52A8\u65F6\u95F4:${colors.reset} ${colors.blue}${currentTime}${colors.reset}${" ".repeat(Math.max(0, 24 - currentTime.length))}${colors.cyan}\u2502${colors.reset}`);
-            originalInfo(`${colors.cyan}\u2502  ${icons.branch} ${colors.white}\u5206\u652F:${colors.reset} ${colors.magenta}${gitInfo.branch}${colors.reset}${" ".repeat(Math.max(0, 37 - gitInfo.branch.length))}${colors.cyan}\u2502${colors.reset}`);
-            originalInfo(`${colors.cyan}\u2502  ${icons.commit} ${colors.white}\u63D0\u4EA4:${colors.reset} ${colors.yellow}${gitInfo.commit}${colors.reset}${" ".repeat(Math.max(0, 37 - gitInfo.commit.length))}${colors.cyan}\u2502${colors.reset}`);
+            console.log(`${colors.cyan}\u2502  ${icons.time} ${colors.white}\u542F\u52A8\u65F6\u95F4:${colors.reset} ${colors.blue}${currentTime}${colors.reset}${" ".repeat(Math.max(0, 24 - currentTime.length))}${colors.cyan}\u2502${colors.reset}`);
+            console.log(`${colors.cyan}\u2502  ${icons.branch} ${colors.white}\u5206\u652F:${colors.reset} ${colors.magenta}${gitInfo.branch}${colors.reset}${" ".repeat(Math.max(0, 37 - gitInfo.branch.length))}${colors.cyan}\u2502${colors.reset}`);
+            console.log(`${colors.cyan}\u2502  ${icons.commit} ${colors.white}\u63D0\u4EA4:${colors.reset} ${colors.yellow}${gitInfo.commit}${colors.reset}${" ".repeat(Math.max(0, 37 - gitInfo.commit.length))}${colors.cyan}\u2502${colors.reset}`);
             if (config.team) {
-              originalInfo(`${colors.cyan}\u2502  ${icons.team} ${colors.white}\u67B6\u6784\u7EC4:${colors.reset} ${colors.blue}${config.team}${colors.reset}${" ".repeat(Math.max(0, 35 - config.team.length))}${colors.cyan}\u2502${colors.reset}`);
+              console.log(`${colors.cyan}\u2502  ${icons.team} ${colors.white}\u67B6\u6784\u7EC4:${colors.reset} ${colors.blue}${config.team}${colors.reset}${" ".repeat(Math.max(0, 35 - config.team.length))}${colors.cyan}\u2502${colors.reset}`);
             }
             if (config.owner) {
-              originalInfo(`${colors.cyan}\u2502  ${icons.user} ${colors.white}\u8D1F\u8D23\u4EBA:${colors.reset} ${colors.blue}${config.owner}${colors.reset}${" ".repeat(Math.max(0, 35 - config.owner.length))}${colors.cyan}\u2502${colors.reset}`);
+              console.log(`${colors.cyan}\u2502  ${icons.user} ${colors.white}\u8D1F\u8D23\u4EBA:${colors.reset} ${colors.blue}${config.owner}${colors.reset}${" ".repeat(Math.max(0, 35 - config.owner.length))}${colors.cyan}\u2502${colors.reset}`);
             }
             if (config.warning || config.security) {
-              originalInfo(`${colors.cyan}\u251C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524${colors.reset}`);
+              console.log(`${colors.cyan}\u251C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524${colors.reset}`);
               if (config.warning) {
-                const warningLines = config.warning.match(/.{1,35}/g) || [config.warning];
-                warningLines.forEach((line, index) => {
-                  const icon = index === 0 ? icons.warning : " ";
-                  const label = index === 0 ? "\u534F\u4F5C\u8B66\u544A:" : "        ";
-                  originalInfo(`${colors.cyan}\u2502  ${colors.yellow}${icon} ${colors.white}${label}${colors.reset} ${colors.yellow}${line}${colors.reset}${" ".repeat(Math.max(0, 32 - label.length - line.length))}${colors.cyan}\u2502${colors.reset}`);
-                });
+                console.log(`${colors.cyan}\u2502  ${colors.yellow}${icons.warning} ${colors.white}\u534F\u4F5C\u8B66\u544A:${colors.reset} ${colors.yellow}${config.warning}${colors.reset}${" ".repeat(Math.max(0, 24 - config.warning.length))}${colors.cyan}\u2502${colors.reset}`);
               }
               if (config.security) {
-                const securityLines = config.security.match(/.{1,35}/g) || [config.security];
-                securityLines.forEach((line, index) => {
-                  const icon = index === 0 ? icons.shield : " ";
-                  const label = index === 0 ? "\u5B89\u5168\u8B66\u544A:" : "        ";
-                  originalInfo(`${colors.cyan}\u2502  ${colors.red}${icon} ${colors.white}${label}${colors.reset} ${colors.red}${line}${colors.reset}${" ".repeat(Math.max(0, 32 - label.length - line.length))}${colors.cyan}\u2502${colors.reset}`);
-                });
+                console.log(`${colors.cyan}\u2502  ${colors.red}${icons.shield} ${colors.white}\u5B89\u5168\u8B66\u544A:${colors.reset} ${colors.red}${config.security}${colors.reset}${" ".repeat(Math.max(0, 24 - config.security.length))}${colors.cyan}\u2502${colors.reset}`);
               }
             }
-            originalInfo(`${colors.cyan}\u2502                                                 \u2502${colors.reset}`);
-            originalInfo(`${colors.cyan}\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256F${colors.reset}`);
+            console.log(`${colors.cyan}\u2502                                                 \u2502${colors.reset}`);
+            console.log(`${colors.cyan}\u2570\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u256F${colors.reset}`);
             console.log("");
             state.hasShownWelcome = true;
           }, 350);
