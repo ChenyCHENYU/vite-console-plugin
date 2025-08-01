@@ -84,12 +84,14 @@ const icons = {
 
 // 判断是否应该屏蔽消息
 function shouldBlockMessage(msg: string): boolean {
-  // 保留 HMR 相关信息
+  // 明确保留的 HMR 和有用信息
   if (
+    msg.includes("[vite] hmr update") ||
+    msg.includes("[vite] page reload") ||
+    msg.includes("[vite] css hot updated") ||
+    msg.includes("[vite] hot updated") ||
     msg.includes("hmr update") ||
-    msg.includes("page reload") ||
-    (msg.includes("[vite]") &&
-      (msg.includes("update") || msg.includes("reload")))
+    msg.includes("page reload")
   ) {
     return false;
   }
@@ -109,8 +111,6 @@ function shouldBlockMessage(msg: string): boolean {
     msg.includes("to toggle the Vue DevTools") ||
     msg.includes("➜  Local:") ||
     msg.includes("➜  Network:")
-    // 保留 "ready in" 和 "VITE v" 信息
-    // 保留 HMR 热更新信息
   );
 }
 
@@ -121,8 +121,8 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
     name: "vite-console-plugin",
     apply: "serve",
     config(userConfig) {
-      // 设置日志级别为 silent 来隐藏大部分 Vite 日志
-      userConfig.logLevel = "silent";
+      // 不要设置 logLevel 为 silent，这会屏蔽所有信息
+      // userConfig.logLevel = 'silent'
       // 禁用清屏功能
       userConfig.clearScreen = false;
     },
@@ -131,28 +131,37 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
         hasShownWelcome: false,
       });
 
-      // 保存原始控制台方法
-      const originalConsoleLog = console.log;
-      const originalConsoleInfo = console.info;
-      const originalConsoleWarn = console.warn;
+      // 只拦截服务器相关的日志方法，不拦截所有控制台输出
+      const originalLoggerInfo = server.config.logger.info.bind(
+        server.config.logger
+      );
+      const originalLoggerWarn = server.config.logger.warn.bind(
+        server.config.logger
+      );
 
-      // 拦截所有控制台输出
-      console.log = (...args) => {
-        const msg = args.join(" ");
-        if (shouldBlockMessage(msg)) return;
-        originalConsoleLog(...args);
+      server.config.logger.info = (msg: string, opts?: any) => {
+        // 只屏蔽启动时的服务器信息，保留其他所有信息
+        if (shouldBlockMessage(msg)) {
+          return;
+        }
+
+        // 保留所有其他信息，包括 HMR
+        originalLoggerInfo(msg, opts);
+
+        if (msg.includes("server restarted")) {
+          console.log("");
+          console.log(
+            `${colors.yellow}${colors.dim}⚡ 配置重载${colors.reset} ${colors.red}${colors.dim}配置文件已更改，请验证修改项并告知相关干系人${colors.reset}`
+          );
+          console.log("");
+        }
       };
 
-      console.info = (...args) => {
-        const msg = args.join(" ");
-        if (shouldBlockMessage(msg)) return;
-        originalConsoleInfo(...args);
-      };
-
-      console.warn = (...args) => {
-        const msg = args.join(" ");
-        if (shouldBlockMessage(msg)) return;
-        originalConsoleWarn(...args);
+      server.config.logger.warn = (msg: string, opts?: any) => {
+        if (shouldBlockMessage(msg)) {
+          return;
+        }
+        originalLoggerWarn(msg, opts);
       };
 
       if (!state.hasShownWelcome) {
@@ -179,171 +188,100 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
               server.resolvedUrls?.network?.[0] || "需要 --host 参数启用";
 
             console.log("");
-            console.log(
-              `${colors.cyan}${colors.bright}┌─ ${colors.white}${config.systemName}${colors.reset} ${colors.gray}${config.description}${colors.reset} ${colors.cyan}─────────────────────────────┐${colors.reset}`
-            );
-            console.log(
-              `${colors.cyan}│${colors.reset}                                                 ${colors.cyan}│${colors.reset}`
-            );
 
-            // 服务器信息区域
+            // 系统标题
             console.log(
-              `${colors.cyan}├─ ${colors.white}${colors.bright}服务器信息${colors.reset} ${colors.cyan}─────────────────────────────────┤${colors.reset}`
+              `${colors.cyan}${colors.bright}🚀 ${config.systemName}${colors.reset} ${colors.gray}${config.description}${colors.reset}`
+            );
+            console.log("");
+
+            // 服务器信息
+            console.log(
+              `${colors.white}${colors.bright}⚡ 服务器信息${colors.reset}`
             );
             console.log(
-              `${colors.cyan}│${colors.reset}  ${colors.green}●${
-                colors.reset
-              } ${colors.white}本地访问${colors.reset}   ${colors.green}${
-                colors.bright
-              }${localUrl}${colors.reset}${" ".repeat(
-                Math.max(0, 24 - localUrl.length)
-              )} ${colors.cyan}│${colors.reset}`
+              `   ${colors.green}●${colors.reset} ${colors.white}本地访问${colors.reset}   ${colors.green}${colors.bright}${localUrl}${colors.reset}`
             );
 
             if (!networkUrl.includes("需要")) {
               console.log(
-                `${colors.cyan}│${colors.reset}  ${colors.blue}●${
-                  colors.reset
-                } ${colors.white}网络访问${colors.reset}   ${
-                  colors.blue
-                }${networkUrl}${colors.reset}${" ".repeat(
-                  Math.max(0, 24 - networkUrl.length)
-                )} ${colors.cyan}│${colors.reset}`
+                `   ${colors.blue}●${colors.reset} ${colors.white}网络访问${colors.reset}   ${colors.blue}${networkUrl}${colors.reset}`
               );
             } else {
               console.log(
-                `${colors.cyan}│${colors.reset}  ${colors.gray}●${
-                  colors.reset
-                } ${colors.white}网络访问${colors.reset}   ${
-                  colors.gray
-                }${networkUrl}${colors.reset}${" ".repeat(
-                  Math.max(0, 24 - networkUrl.length)
-                )} ${colors.cyan}│${colors.reset}`
+                `   ${colors.gray}●${colors.reset} ${colors.white}网络访问${colors.reset}   ${colors.gray}${networkUrl}${colors.reset}`
               );
             }
 
             console.log(
-              `${colors.cyan}│${colors.reset}  ${colors.magenta}●${colors.reset} ${colors.white}开发工具${colors.reset}   ${colors.magenta}Vue DevTools & UnoCSS Inspector${colors.reset} ${colors.cyan}│${colors.reset}`
+              `   ${colors.magenta}●${colors.reset} ${colors.white}开发工具${colors.reset}   ${colors.magenta}Vue DevTools & UnoCSS Inspector${colors.reset}`
             );
+            console.log("");
 
-            // 项目信息区域
+            // 项目信息
             console.log(
-              `${colors.cyan}├─ ${colors.white}${colors.bright}项目信息${colors.reset} ${colors.cyan}─────────────────────────────────┤${colors.reset}`
+              `${colors.white}${colors.bright}📦 项目信息${colors.reset}`
             );
 
             if (config.autoVersion) {
               console.log(
-                `${colors.cyan}│${colors.reset}  ${colors.green}${
-                  icons.package
-                }${colors.reset} ${colors.white}版本号${colors.reset}     ${
-                  colors.green
-                }${colors.bright}v${version}${colors.reset}${" ".repeat(
-                  Math.max(0, 25 - version.length)
-                )} ${colors.cyan}│${colors.reset}`
+                `   ${colors.white}版本号${colors.reset}       ${colors.green}${colors.bright}v${version}${colors.reset}`
               );
             }
 
             console.log(
-              `${colors.cyan}│${colors.reset}  ${colors.blue}${icons.time}${
-                colors.reset
-              } ${colors.white}启动时间${colors.reset}   ${
-                colors.blue
-              }${currentTime}${colors.reset}${" ".repeat(
-                Math.max(0, 16 - currentTime.length)
-              )} ${colors.cyan}│${colors.reset}`
+              `   ${colors.white}启动时间${colors.reset}     ${colors.blue}${currentTime}${colors.reset}`
             );
             console.log(
-              `${colors.cyan}│${colors.reset}  ${colors.magenta}${
-                icons.branch
-              }${colors.reset} ${colors.white}Git 分支${colors.reset}   ${
-                colors.magenta
-              }${gitInfo.branch}${colors.reset}${" ".repeat(
-                Math.max(0, 24 - gitInfo.branch.length)
-              )} ${colors.cyan}│${colors.reset}`
+              `   ${colors.white}Git 分支${colors.reset}     ${colors.magenta}${gitInfo.branch}${colors.reset}`
             );
             console.log(
-              `${colors.cyan}│${colors.reset}  ${colors.yellow}${icons.commit}${
-                colors.reset
-              } ${colors.white}提交哈希${colors.reset}   ${colors.yellow}${
-                gitInfo.commit
-              }${colors.reset}${" ".repeat(
-                Math.max(0, 24 - gitInfo.commit.length)
-              )} ${colors.cyan}│${colors.reset}`
+              `   ${colors.white}提交哈希${colors.reset}     ${colors.yellow}${gitInfo.commit}${colors.reset}`
             );
 
-            // 团队信息区域
+            // 团队信息
             if (config.team || config.owner) {
+              console.log("");
               console.log(
-                `${colors.cyan}├─ ${colors.white}${colors.bright}团队信息${colors.reset} ${colors.cyan}─────────────────────────────────┤${colors.reset}`
+                `${colors.white}${colors.bright}👥 团队信息${colors.reset}`
               );
 
               if (config.team) {
                 console.log(
-                  `${colors.cyan}│${colors.reset}  ${colors.blue}${icons.team}${
-                    colors.reset
-                  } ${colors.white}架构组${colors.reset}     ${colors.blue}${
-                    config.team
-                  }${colors.reset}${" ".repeat(
-                    Math.max(0, 27 - config.team.length)
-                  )} ${colors.cyan}│${colors.reset}`
+                  `   ${colors.white}架构组${colors.reset}       ${colors.blue}${config.team}${colors.reset}`
                 );
               }
 
               if (config.owner) {
                 console.log(
-                  `${colors.cyan}│${colors.reset}  ${colors.blue}${icons.user}${
-                    colors.reset
-                  } ${colors.white}负责人${colors.reset}     ${colors.blue}${
-                    config.owner
-                  }${colors.reset}${" ".repeat(
-                    Math.max(0, 27 - config.owner.length)
-                  )} ${colors.cyan}│${colors.reset}`
+                  `   ${colors.white}负责人${colors.reset}       ${colors.blue}${config.owner}${colors.reset}`
                 );
               }
             }
 
-            // 警告信息区域
+            // 重要提醒
             if (config.warning || config.security) {
+              console.log("");
               console.log(
-                `${colors.cyan}├─ ${colors.white}${colors.bright}重要提醒${colors.reset} ${colors.cyan}─────────────────────────────────┤${colors.reset}`
+                `${colors.white}${colors.bright}⚠️  重要提醒${colors.reset}`
               );
 
               if (config.warning) {
                 console.log(
-                  `${colors.cyan}│${colors.reset}  ${colors.yellow}${
-                    icons.warning
-                  }${colors.reset} ${colors.yellow}${config.warning}${
-                    colors.reset
-                  }${" ".repeat(Math.max(0, 40 - config.warning.length))} ${
-                    colors.cyan
-                  }│${colors.reset}`
+                  `   ${colors.yellow}●${colors.reset} ${colors.yellow}${config.warning}${colors.reset}`
                 );
               }
 
               if (config.security) {
                 console.log(
-                  `${colors.cyan}│${colors.reset}  ${colors.red}${
-                    icons.shield
-                  }${colors.reset} ${colors.red}${config.security}${
-                    colors.reset
-                  }${" ".repeat(Math.max(0, 40 - config.security.length))} ${
-                    colors.cyan
-                  }│${colors.reset}`
+                  `   ${colors.red}●${colors.reset} ${colors.red}${config.security}${colors.reset}`
                 );
               }
             }
 
-            console.log(
-              `${colors.cyan}│${colors.reset}                                                 ${colors.cyan}│${colors.reset}`
-            );
-            console.log(
-              `${colors.cyan}└─────────────────────────────────────────────────┘${colors.reset}`
-            );
             console.log("");
-
-            // 启动成功提示
             console.log(
-              `${colors.green}${colors.bright}✨ 启动成功！${colors.reset} ${colors.gray}开发服务器已就绪，开始愉快地开发吧~ ${colors.green}🚀${colors.reset}`
+              `${colors.green}${colors.bright}✨ 启动成功！${colors.reset} ${colors.gray}开发服务器已就绪${colors.reset}`
             );
             console.log("");
 
@@ -352,18 +290,7 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
         });
       }
 
-      // 监听服务器重启
-      const originalInfo = server.config.logger.info.bind(server.config.logger);
-      server.config.logger.info = (msg: string, opts?: any) => {
-        if (msg.includes("server restarted")) {
-          console.log("");
-          console.log(
-            `${colors.yellow}${colors.bright}⚡ 配置重载${colors.reset} ${colors.gray}配置文件已更改，请验证修改项并告知相关干系人${colors.reset}`
-          );
-          console.log("");
-        }
-        // 其他信息不显示
-      };
+      // 监听服务器重启不需要单独处理，已经在上面的 info 方法中处理
     },
   };
 }
