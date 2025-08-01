@@ -84,33 +84,12 @@ const icons = {
 
 // 判断是否应该屏蔽消息
 function shouldBlockMessage(msg: string): boolean {
-  // 明确保留的 HMR 和有用信息
-  if (
-    msg.includes("[vite] hmr update") ||
-    msg.includes("[vite] page reload") ||
-    msg.includes("[vite] css hot updated") ||
-    msg.includes("[vite] hot updated") ||
-    msg.includes("hmr update") ||
-    msg.includes("page reload")
-  ) {
-    return false;
-  }
-
   return (
-    msg.includes("Local:") ||
-    msg.includes("Network:") ||
-    msg.includes("Vue DevTools") ||
-    msg.includes("UnoCSS Inspector") ||
-    msg.includes("press h + enter") ||
-    msg.includes("use --host to expose") ||
-    msg.includes("Press Alt") ||
-    msg.includes("Open http://") ||
-    msg.includes("__devtools__") ||
-    msg.includes("__unocss") ||
-    msg.includes("as a separate window") ||
-    msg.includes("to toggle the Vue DevTools") ||
     msg.includes("➜  Local:") ||
-    msg.includes("➜  Network:")
+    msg.includes("➜  Network:") ||
+    msg.includes("➜  Vue DevTools:") ||
+    msg.includes("➜  UnoCSS Inspector:") ||
+    msg.includes("➜  press h + enter")
   );
 }
 
@@ -188,6 +167,7 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
               server.resolvedUrls?.network?.[0] || "需要 --host 参数启用";
 
             console.log("");
+            console.log(`${colors.gray}${"─".repeat(50)}${colors.reset}`);
 
             // 系统标题
             console.log(
@@ -225,18 +205,18 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
 
             if (config.autoVersion) {
               console.log(
-                `   ${colors.white}版本号${colors.reset}       ${colors.green}${colors.bright}v${version}${colors.reset}`
+                `   ${colors.green}●${colors.reset} ${colors.white}版本号${colors.reset}       ${colors.green}${colors.bright}v${version}${colors.reset}`
               );
             }
 
             console.log(
-              `   ${colors.white}启动时间${colors.reset}     ${colors.blue}${currentTime}${colors.reset}`
+              `   ${colors.blue}●${colors.reset} ${colors.white}启动时间${colors.reset}     ${colors.blue}${currentTime}${colors.reset}`
             );
             console.log(
-              `   ${colors.white}Git 分支${colors.reset}     ${colors.magenta}${gitInfo.branch}${colors.reset}`
+              `   ${colors.magenta}●${colors.reset} ${colors.white}Git 分支${colors.reset}     ${colors.magenta}${gitInfo.branch}${colors.reset}`
             );
             console.log(
-              `   ${colors.white}提交哈希${colors.reset}     ${colors.yellow}${gitInfo.commit}${colors.reset}`
+              `   ${colors.yellow}●${colors.reset} ${colors.white}提交哈希${colors.reset}     ${colors.yellow}${gitInfo.commit}${colors.reset}`
             );
 
             // 团队信息
@@ -248,13 +228,13 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
 
               if (config.team) {
                 console.log(
-                  `   ${colors.white}架构组${colors.reset}       ${colors.blue}${config.team}${colors.reset}`
+                  `   ${colors.blue}●${colors.reset} ${colors.white}架构组${colors.reset}       ${colors.blue}${config.team}${colors.reset}`
                 );
               }
 
               if (config.owner) {
                 console.log(
-                  `   ${colors.white}负责人${colors.reset}       ${colors.blue}${config.owner}${colors.reset}`
+                  `   ${colors.blue}●${colors.reset} ${colors.white}负责人${colors.reset}       ${colors.blue}${config.owner}${colors.reset}`
                 );
               }
             }
@@ -283,6 +263,7 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
             console.log(
               `${colors.green}${colors.bright}✨ 启动成功！${colors.reset} ${colors.gray}开发服务器已就绪${colors.reset}`
             );
+            console.log(`${colors.gray}${"─".repeat(50)}${colors.reset}`);
             console.log("");
 
             state.hasShownWelcome = true;

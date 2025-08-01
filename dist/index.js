@@ -65,23 +65,8 @@ var colors = {
   white: "\x1B[37m",
   gray: "\x1B[90m"
 };
-var icons = {
-  rocket: "\u{1F680}",
-  package: "\u{1F4E6}",
-  team: "\u{1F465}",
-  user: "\u{1F468}\u200D\u{1F4BB}",
-  branch: "\u{1F33F}",
-  commit: "\u{1F517}",
-  warning: "\u26A0\uFE0F",
-  shield: "\u{1F6E1}\uFE0F",
-  time: "\u{1F550}",
-  local: "\u{1F310}",
-  network: "\u{1F4E1}",
-  devtools: "\u{1F527}",
-  inspector: "\u{1F50D}"
-};
 function shouldBlockMessage(msg) {
-  if (msg.includes("hmr update") || msg.includes("page reload") || msg.includes("[vite]") && (msg.includes("update") || msg.includes("reload"))) {
+  if (msg.includes("[vite] hmr update") || msg.includes("[vite] page reload") || msg.includes("[vite] css hot updated") || msg.includes("[vite] hot updated") || msg.includes("hmr update") || msg.includes("page reload")) {
     return false;
   }
   return msg.includes("Local:") || msg.includes("Network:") || msg.includes("Vue DevTools") || msg.includes("UnoCSS Inspector") || msg.includes("press h + enter") || msg.includes("use --host to expose") || msg.includes("Press Alt") || msg.includes("Open http://") || msg.includes("__devtools__") || msg.includes("__unocss") || msg.includes("as a separate window") || msg.includes("to toggle the Vue DevTools") || msg.includes("\u279C  Local:") || msg.includes("\u279C  Network:");
@@ -92,30 +77,36 @@ function viteConsolePlugin(options = {}) {
     name: "vite-console-plugin",
     apply: "serve",
     config(userConfig) {
-      userConfig.logLevel = "silent";
       userConfig.clearScreen = false;
     },
     configureServer(server) {
       const state = globalThis.__vite_console_plugin_state__ || (globalThis.__vite_console_plugin_state__ = {
         hasShownWelcome: false
       });
-      const originalConsoleLog = console.log;
-      const originalConsoleInfo = console.info;
-      const originalConsoleWarn = console.warn;
-      console.log = (...args) => {
-        const msg = args.join(" ");
-        if (shouldBlockMessage(msg)) return;
-        originalConsoleLog(...args);
+      const originalLoggerInfo = server.config.logger.info.bind(
+        server.config.logger
+      );
+      const originalLoggerWarn = server.config.logger.warn.bind(
+        server.config.logger
+      );
+      server.config.logger.info = (msg, opts) => {
+        if (shouldBlockMessage(msg)) {
+          return;
+        }
+        originalLoggerInfo(msg, opts);
+        if (msg.includes("server restarted")) {
+          console.log("");
+          console.log(
+            `${colors.yellow}${colors.dim}\u26A1 \u914D\u7F6E\u91CD\u8F7D${colors.reset} ${colors.red}${colors.dim}\u914D\u7F6E\u6587\u4EF6\u5DF2\u66F4\u6539\uFF0C\u8BF7\u9A8C\u8BC1\u4FEE\u6539\u9879\u5E76\u544A\u77E5\u76F8\u5173\u5E72\u7CFB\u4EBA${colors.reset}`
+          );
+          console.log("");
+        }
       };
-      console.info = (...args) => {
-        const msg = args.join(" ");
-        if (shouldBlockMessage(msg)) return;
-        originalConsoleInfo(...args);
-      };
-      console.warn = (...args) => {
-        const msg = args.join(" ");
-        if (shouldBlockMessage(msg)) return;
-        originalConsoleWarn(...args);
+      server.config.logger.warn = (msg, opts) => {
+        if (shouldBlockMessage(msg)) {
+          return;
+        }
+        originalLoggerWarn(msg, opts);
       };
       if (!state.hasShownWelcome) {
         server.httpServer?.once("listening", () => {
@@ -136,119 +127,86 @@ function viteConsolePlugin(options = {}) {
             const networkUrl = server.resolvedUrls?.network?.[0] || "\u9700\u8981 --host \u53C2\u6570\u542F\u7528";
             console.log("");
             console.log(
-              `${colors.cyan}${colors.bright}\u250C\u2500 ${colors.white}${config.systemName}${colors.reset} ${colors.gray}${config.description}${colors.reset} ${colors.cyan}\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510${colors.reset}`
+              `${colors.cyan}${colors.bright}\u{1F680} ${config.systemName}${colors.reset} ${colors.gray}${config.description}${colors.reset}`
+            );
+            console.log("");
+            console.log(
+              `${colors.white}${colors.bright}\u26A1 \u670D\u52A1\u5668\u4FE1\u606F${colors.reset}`
             );
             console.log(
-              `${colors.cyan}\u2502${colors.reset}                                                 ${colors.cyan}\u2502${colors.reset}`
-            );
-            console.log(
-              `${colors.cyan}\u251C\u2500 ${colors.white}${colors.bright}\u670D\u52A1\u5668\u4FE1\u606F${colors.reset} ${colors.cyan}\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524${colors.reset}`
-            );
-            console.log(
-              `${colors.cyan}\u2502${colors.reset}  ${colors.green}\u25CF${colors.reset} ${colors.white}\u672C\u5730\u8BBF\u95EE${colors.reset}   ${colors.green}${colors.bright}${localUrl}${colors.reset}${" ".repeat(
-                Math.max(0, 24 - localUrl.length)
-              )} ${colors.cyan}\u2502${colors.reset}`
+              `   ${colors.green}\u25CF${colors.reset} ${colors.white}\u672C\u5730\u8BBF\u95EE${colors.reset}   ${colors.green}${colors.bright}${localUrl}${colors.reset}`
             );
             if (!networkUrl.includes("\u9700\u8981")) {
               console.log(
-                `${colors.cyan}\u2502${colors.reset}  ${colors.blue}\u25CF${colors.reset} ${colors.white}\u7F51\u7EDC\u8BBF\u95EE${colors.reset}   ${colors.blue}${networkUrl}${colors.reset}${" ".repeat(
-                  Math.max(0, 24 - networkUrl.length)
-                )} ${colors.cyan}\u2502${colors.reset}`
+                `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u7F51\u7EDC\u8BBF\u95EE${colors.reset}   ${colors.blue}${networkUrl}${colors.reset}`
               );
             } else {
               console.log(
-                `${colors.cyan}\u2502${colors.reset}  ${colors.gray}\u25CF${colors.reset} ${colors.white}\u7F51\u7EDC\u8BBF\u95EE${colors.reset}   ${colors.gray}${networkUrl}${colors.reset}${" ".repeat(
-                  Math.max(0, 24 - networkUrl.length)
-                )} ${colors.cyan}\u2502${colors.reset}`
+                `   ${colors.gray}\u25CF${colors.reset} ${colors.white}\u7F51\u7EDC\u8BBF\u95EE${colors.reset}   ${colors.gray}${networkUrl}${colors.reset}`
               );
             }
             console.log(
-              `${colors.cyan}\u2502${colors.reset}  ${colors.magenta}\u25CF${colors.reset} ${colors.white}\u5F00\u53D1\u5DE5\u5177${colors.reset}   ${colors.magenta}Vue DevTools & UnoCSS Inspector${colors.reset} ${colors.cyan}\u2502${colors.reset}`
+              `   ${colors.magenta}\u25CF${colors.reset} ${colors.white}\u5F00\u53D1\u5DE5\u5177${colors.reset}   ${colors.magenta}Vue DevTools & UnoCSS Inspector${colors.reset}`
             );
+            console.log("");
             console.log(
-              `${colors.cyan}\u251C\u2500 ${colors.white}${colors.bright}\u9879\u76EE\u4FE1\u606F${colors.reset} ${colors.cyan}\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524${colors.reset}`
+              `${colors.white}${colors.bright}\u{1F4E6} \u9879\u76EE\u4FE1\u606F${colors.reset}`
             );
             if (config.autoVersion) {
               console.log(
-                `${colors.cyan}\u2502${colors.reset}  ${colors.green}${icons.package}${colors.reset} ${colors.white}\u7248\u672C\u53F7${colors.reset}     ${colors.green}${colors.bright}v${version}${colors.reset}${" ".repeat(
-                  Math.max(0, 25 - version.length)
-                )} ${colors.cyan}\u2502${colors.reset}`
+                `   ${colors.white}\u7248\u672C\u53F7${colors.reset}       ${colors.green}${colors.bright}v${version}${colors.reset}`
               );
             }
             console.log(
-              `${colors.cyan}\u2502${colors.reset}  ${colors.blue}${icons.time}${colors.reset} ${colors.white}\u542F\u52A8\u65F6\u95F4${colors.reset}   ${colors.blue}${currentTime}${colors.reset}${" ".repeat(
-                Math.max(0, 16 - currentTime.length)
-              )} ${colors.cyan}\u2502${colors.reset}`
+              `   ${colors.white}\u542F\u52A8\u65F6\u95F4${colors.reset}     ${colors.blue}${currentTime}${colors.reset}`
             );
             console.log(
-              `${colors.cyan}\u2502${colors.reset}  ${colors.magenta}${icons.branch}${colors.reset} ${colors.white}Git \u5206\u652F${colors.reset}   ${colors.magenta}${gitInfo.branch}${colors.reset}${" ".repeat(
-                Math.max(0, 24 - gitInfo.branch.length)
-              )} ${colors.cyan}\u2502${colors.reset}`
+              `   ${colors.white}Git \u5206\u652F${colors.reset}     ${colors.magenta}${gitInfo.branch}${colors.reset}`
             );
             console.log(
-              `${colors.cyan}\u2502${colors.reset}  ${colors.yellow}${icons.commit}${colors.reset} ${colors.white}\u63D0\u4EA4\u54C8\u5E0C${colors.reset}   ${colors.yellow}${gitInfo.commit}${colors.reset}${" ".repeat(
-                Math.max(0, 24 - gitInfo.commit.length)
-              )} ${colors.cyan}\u2502${colors.reset}`
+              `   ${colors.white}\u63D0\u4EA4\u54C8\u5E0C${colors.reset}     ${colors.yellow}${gitInfo.commit}${colors.reset}`
             );
             if (config.team || config.owner) {
+              console.log("");
               console.log(
-                `${colors.cyan}\u251C\u2500 ${colors.white}${colors.bright}\u56E2\u961F\u4FE1\u606F${colors.reset} ${colors.cyan}\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524${colors.reset}`
+                `${colors.white}${colors.bright}\u{1F465} \u56E2\u961F\u4FE1\u606F${colors.reset}`
               );
               if (config.team) {
                 console.log(
-                  `${colors.cyan}\u2502${colors.reset}  ${colors.blue}${icons.team}${colors.reset} ${colors.white}\u67B6\u6784\u7EC4${colors.reset}     ${colors.blue}${config.team}${colors.reset}${" ".repeat(
-                    Math.max(0, 27 - config.team.length)
-                  )} ${colors.cyan}\u2502${colors.reset}`
+                  `   ${colors.white}\u67B6\u6784\u7EC4${colors.reset}       ${colors.blue}${config.team}${colors.reset}`
                 );
               }
               if (config.owner) {
                 console.log(
-                  `${colors.cyan}\u2502${colors.reset}  ${colors.blue}${icons.user}${colors.reset} ${colors.white}\u8D1F\u8D23\u4EBA${colors.reset}     ${colors.blue}${config.owner}${colors.reset}${" ".repeat(
-                    Math.max(0, 27 - config.owner.length)
-                  )} ${colors.cyan}\u2502${colors.reset}`
+                  `   ${colors.white}\u8D1F\u8D23\u4EBA${colors.reset}       ${colors.blue}${config.owner}${colors.reset}`
                 );
               }
             }
             if (config.warning || config.security) {
+              console.log("");
               console.log(
-                `${colors.cyan}\u251C\u2500 ${colors.white}${colors.bright}\u91CD\u8981\u63D0\u9192${colors.reset} ${colors.cyan}\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524${colors.reset}`
+                `${colors.white}${colors.bright}\u26A0\uFE0F  \u91CD\u8981\u63D0\u9192${colors.reset}`
               );
               if (config.warning) {
                 console.log(
-                  `${colors.cyan}\u2502${colors.reset}  ${colors.yellow}${icons.warning}${colors.reset} ${colors.yellow}${config.warning}${colors.reset}${" ".repeat(Math.max(0, 40 - config.warning.length))} ${colors.cyan}\u2502${colors.reset}`
+                  `   ${colors.yellow}\u25CF${colors.reset} ${colors.yellow}${config.warning}${colors.reset}`
                 );
               }
               if (config.security) {
                 console.log(
-                  `${colors.cyan}\u2502${colors.reset}  ${colors.red}${icons.shield}${colors.reset} ${colors.red}${config.security}${colors.reset}${" ".repeat(Math.max(0, 40 - config.security.length))} ${colors.cyan}\u2502${colors.reset}`
+                  `   ${colors.red}\u25CF${colors.reset} ${colors.red}${config.security}${colors.reset}`
                 );
               }
             }
-            console.log(
-              `${colors.cyan}\u2502${colors.reset}                                                 ${colors.cyan}\u2502${colors.reset}`
-            );
-            console.log(
-              `${colors.cyan}\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518${colors.reset}`
-            );
             console.log("");
             console.log(
-              `${colors.green}${colors.bright}\u2728 \u542F\u52A8\u6210\u529F\uFF01${colors.reset} ${colors.gray}\u5F00\u53D1\u670D\u52A1\u5668\u5DF2\u5C31\u7EEA\uFF0C\u5F00\u59CB\u6109\u5FEB\u5730\u5F00\u53D1\u5427~ ${colors.green}\u{1F680}${colors.reset}`
+              `${colors.green}${colors.bright}\u2728 \u542F\u52A8\u6210\u529F\uFF01${colors.reset} ${colors.gray}\u5F00\u53D1\u670D\u52A1\u5668\u5DF2\u5C31\u7EEA${colors.reset}`
             );
             console.log("");
             state.hasShownWelcome = true;
           }, 350);
         });
       }
-      const originalInfo = server.config.logger.info.bind(server.config.logger);
-      server.config.logger.info = (msg, opts) => {
-        if (msg.includes("server restarted")) {
-          console.log("");
-          console.log(
-            `${colors.yellow}${colors.bright}\u26A1 \u914D\u7F6E\u91CD\u8F7D${colors.reset} ${colors.gray}\u914D\u7F6E\u6587\u4EF6\u5DF2\u66F4\u6539\uFF0C\u8BF7\u9A8C\u8BC1\u4FEE\u6539\u9879\u5E76\u544A\u77E5\u76F8\u5173\u5E72\u7CFB\u4EBA${colors.reset}`
-          );
-          console.log("");
-        }
-      };
     }
   };
 }
