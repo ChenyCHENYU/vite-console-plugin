@@ -87,7 +87,7 @@ function viteConsolePlugin(options = {}) {
         server.config.logger
       );
       server.config.logger.info = (msg, opts) => {
-        if (shouldBlockMessage(msg)) {
+        if (msg.includes("Local:") || msg.includes("Network:") || msg.includes("Vue DevTools:") || msg.includes("UnoCSS Inspector:") || msg.includes("press h + enter") || msg.includes("use --host to expose") || msg.includes("Press Alt") || msg.includes("Open http://") || msg.includes("__devtools__") || msg.includes("__unocss") || msg.includes("as a separate window") || msg.includes("to toggle the Vue DevTools")) {
           return;
         }
         originalLoggerInfo(msg, opts);
@@ -104,6 +104,18 @@ function viteConsolePlugin(options = {}) {
           return;
         }
         originalLoggerWarn(msg, opts);
+      };
+      const originalConsoleInfo = console.info;
+      const originalConsoleLog = console.log;
+      console.info = (...args) => {
+        const msg = args.join(" ");
+        if (shouldBlockMessage(msg)) return;
+        originalConsoleInfo(...args);
+      };
+      console.log = (...args) => {
+        const msg = args.join(" ");
+        if (shouldBlockMessage(msg)) return;
+        originalConsoleLog(...args);
       };
       if (!state.hasShownWelcome) {
         server.httpServer?.once("listening", () => {

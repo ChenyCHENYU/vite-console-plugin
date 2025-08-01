@@ -82,15 +82,44 @@ const icons = {
   inspector: "🔍",
 };
 
-// 判断是否应该屏蔽消息
+// 精确判断是否应该屏蔽消息
 function shouldBlockMessage(msg: string): boolean {
-  return (
-    msg.includes("➜  Local:") ||
-    msg.includes("➜  Network:") ||
-    msg.includes("➜  Vue DevTools:") ||
-    msg.includes("➜  UnoCSS Inspector:") ||
-    msg.includes("➜  press h + enter")
-  );
+  // 需要屏蔽的具体信息模式
+  const blockPatterns = [
+    /➜\s+Local:\s+http:\/\/[^\/]+\/?,?\s*$/,        // Local 地址
+    /➜\s+Network:\s+use\s+--host\s+to\s+expose/,    // Network 提示
+    /➜\s+Vue DevTools:/,                            // Vue DevTools 相关
+    /➜\s+UnoCSS Inspector:/,                        // UnoCSS Inspector
+    /➜\s+press\s+h\s+\+\s+enter\s+to\s+show\s+help/, // 帮助提示
+    /use\s+--host\s+to\s+expose/,                   // host 参数提示
+    /Press\s+Alt\s+\+\s+Shift\s+\+\s+D/,           // Vue DevTools 快捷键
+    /Open\s+http:\/\/[^\/]+\/__devtools__\//,       // DevTools 窗口提示
+    /as\s+a\s+separate\s+window/,                   // 窗口提示
+    /to\s+toggle\s+the\s+Vue\s+DevTools/,          // DevTools 切换提示
+    /__devtools__/,                                 // DevTools 路径
+    /__unocss/,                                     // UnoCSS 路径
+  ];
+
+  // 检查是否匹配任何屏蔽模式
+  return blockPatterns.some(pattern => pattern.test(msg.trim()));
+}
+
+// 判断是否为重要的构建/开发信息（需要保留的）
+function isImportantDevMessage(msg: string): boolean {
+  const importantPatterns = [
+    /ready\s+in\s+\d+ms/i,                     // 构建完成时间
+    /built\s+in\s+\d+ms/i,                     // 构建耗时
+    /server\s+restarted/i,                     // 服务器重启
+    /hmr\s+update/i,                           // HMR 更新
+    /page\s+reload/i,                          // 页面重载
+    /\d+\s+modules?\s+transformed/i,           // 模块转换
+    /vite\s+v\d+\.\d+\.\d+/i,                // Vite 版本信息
+    /dev\s+server\s+running/i,                // 开发服务器状态
+    /optimizing\s+dependencies/i,              // 依赖优化
+    /dependencies\s+optimized/i,               // 依赖优化完成
+  ];
+
+  return importantPatterns.some(pattern => pattern.test(msg));
 }
 
 export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
@@ -100,8 +129,7 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
     name: "vite-console-plugin",
     apply: "serve",
     config(userConfig) {
-      // 不要设置 logLevel 为 silent，这会屏蔽所有信息
-      // userConfig.logLevel = 'silent'
+      // 不设置 logLevel 为 silent，保留错误和警告
       // 禁用清屏功能
       userConfig.clearScreen = false;
     },
@@ -110,36 +138,33 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
         hasShownWelcome: false,
       });
 
-      // 重写 logger 的 info 方法来屏蔽特定信息
+      // 重写 logger 的 info 方法
       const originalLoggerInfo = server.config.logger.info.bind(
         server.config.logger
       );
       const originalLoggerWarn = server.config.logger.warn.bind(
         server.config.logger
       );
+      const originalLoggerError = server.config.logger.error.bind(
+        server.config.logger
+      );
 
       server.config.logger.info = (msg: string, opts?: any) => {
-        // 屏蔽特定的启动信息
-        if (
-          msg.includes("Local:") ||
-          msg.includes("Network:") ||
-          msg.includes("Vue DevTools:") ||
-          msg.includes("UnoCSS Inspector:") ||
-          msg.includes("press h + enter") ||
-          msg.includes("use --host to expose") ||
-          msg.includes("Press Alt") ||
-          msg.includes("Open http://") ||
-          msg.includes("__devtools__") ||
-          msg.includes("__unocss") ||
-          msg.includes("as a separate window") ||
-          msg.includes("to toggle the Vue DevTools")
-        ) {
+        // 如果是重要的开发信息，直接显示
+        if (isImportantDevMessage(msg)) {
+          originalLoggerInfo(msg, opts);
           return;
         }
 
-        // 保留所有其他信息
+        // 屏蔽特定的启动信息
+        if (shouldBlockMessage(msg)) {
+          return;
+        }
+
+        // 显示其他信息
         originalLoggerInfo(msg, opts);
 
+        // 服务器重启后的自定义提示
         if (msg.includes("server restarted")) {
           console.log("");
           console.log(
@@ -150,26 +175,54 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
       };
 
       server.config.logger.warn = (msg: string, opts?: any) => {
+        // 保留重要的警告信息
+        if (isImportantDevMessage(msg)) {
+          originalLoggerWarn(msg, opts);
+          return;
+        }
+
         if (shouldBlockMessage(msg)) {
           return;
         }
         originalLoggerWarn(msg, opts);
       };
 
-      // 同时拦截 console 输出（因为某些信息可能通过 console 输出）
+      // 保持错误输出不变
+      server.config.logger.error = originalLoggerError;
+
+      // 拦截 console 输出
       const originalConsoleInfo = console.info;
       const originalConsoleLog = console.log;
+      const originalConsoleWarn = console.warn;
 
       console.info = (...args) => {
         const msg = args.join(" ");
+        if (isImportantDevMessage(msg)) {
+          originalConsoleInfo(...args);
+          return;
+        }
         if (shouldBlockMessage(msg)) return;
         originalConsoleInfo(...args);
       };
 
       console.log = (...args) => {
         const msg = args.join(" ");
+        if (isImportantDevMessage(msg)) {
+          originalConsoleLog(...args);
+          return;
+        }
         if (shouldBlockMessage(msg)) return;
         originalConsoleLog(...args);
+      };
+
+      console.warn = (...args) => {
+        const msg = args.join(" ");
+        if (isImportantDevMessage(msg)) {
+          originalConsoleWarn(...args);
+          return;
+        }
+        if (shouldBlockMessage(msg)) return;
+        originalConsoleWarn(...args);
       };
 
       if (!state.hasShownWelcome) {
@@ -299,8 +352,6 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
           }, 350);
         });
       }
-
-      // 监听服务器重启不需要单独处理，已经在上面的 info 方法中处理
     },
   };
 }
