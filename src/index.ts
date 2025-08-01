@@ -259,7 +259,7 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
 
             // 系统标题
             console.log(
-              `${colors.cyan}${colors.bright}🚀 ${config.systemName}${colors.reset} ${colors.gray}${config.description}${colors.reset}`
+              `${colors.cyan}${colors.bright}🤖 ${config.systemName}${colors.reset} ${colors.gray}${config.description}${colors.reset}`
             );
             console.log("");
 
