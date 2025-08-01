@@ -84,13 +84,19 @@ const icons = {
 
 // 精确判断是否应该屏蔽消息
 function shouldBlockMessage(msg: string): boolean {
+  // 清理消息：去除 ANSI 颜色代码和多余空格
+  const cleanMsg = msg.replace(/\x1b\[[0-9;]*m/g, '').trim();
+  
   // 需要屏蔽的具体信息模式
   const blockPatterns = [
-    /➜\s+Local:\s+http:\/\/[^\/]+\/?,?\s*$/,        // Local 地址
-    /➜\s+Network:\s+use\s+--host\s+to\s+expose/,    // Network 提示
-    /➜\s+Vue DevTools:/,                            // Vue DevTools 相关
-    /➜\s+UnoCSS Inspector:/,                        // UnoCSS Inspector
-    /➜\s+press\s+h\s+\+\s+enter\s+to\s+show\s+help/, // 帮助提示
+    /^➜\s+Local:\s+http:\/\/.*$/,                   // Local 地址
+    /^➜\s+Network:\s+use\s+--host\s+to\s+expose.*$/, // Network 提示  
+    /^➜\s+press\s+h\s+\+\s+enter\s+to\s+show\s+help.*$/, // 帮助提示
+    /^➜\s+Vue DevTools:/,                           // Vue DevTools 相关
+    /^➜\s+UnoCSS Inspector:/,                       // UnoCSS Inspector
+    /Local:\s+http:\/\/.*$/,                        // 不带 ➜ 的 Local
+    /Network:\s+use\s+--host\s+to\s+expose/,        // 不带 ➜ 的 Network
+    /press\s+h\s+\+\s+enter\s+to\s+show\s+help/,   // 不带 ➜ 的帮助
     /use\s+--host\s+to\s+expose/,                   // host 参数提示
     /Press\s+Alt\s+\+\s+Shift\s+\+\s+D/,           // Vue DevTools 快捷键
     /Open\s+http:\/\/[^\/]+\/__devtools__\//,       // DevTools 窗口提示
@@ -101,7 +107,7 @@ function shouldBlockMessage(msg: string): boolean {
   ];
 
   // 检查是否匹配任何屏蔽模式
-  return blockPatterns.some(pattern => pattern.test(msg.trim()));
+  return blockPatterns.some(pattern => pattern.test(cleanMsg));
 }
 
 // 判断是否为重要的构建/开发信息（需要保留的）

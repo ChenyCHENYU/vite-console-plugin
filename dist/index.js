@@ -66,7 +66,58 @@ var colors = {
   gray: "\x1B[90m"
 };
 function shouldBlockMessage(msg) {
-  return msg.includes("\u279C  Local:") || msg.includes("\u279C  Network:") || msg.includes("\u279C  Vue DevTools:") || msg.includes("\u279C  UnoCSS Inspector:") || msg.includes("\u279C  press h + enter");
+  const blockPatterns = [
+    /➜\s+Local:\s+http:\/\/[^\/]+\/?,?\s*$/,
+    // Local 地址
+    /➜\s+Network:\s+use\s+--host\s+to\s+expose/,
+    // Network 提示
+    /➜\s+Vue DevTools:/,
+    // Vue DevTools 相关
+    /➜\s+UnoCSS Inspector:/,
+    // UnoCSS Inspector
+    /➜\s+press\s+h\s+\+\s+enter\s+to\s+show\s+help/,
+    // 帮助提示
+    /use\s+--host\s+to\s+expose/,
+    // host 参数提示
+    /Press\s+Alt\s+\+\s+Shift\s+\+\s+D/,
+    // Vue DevTools 快捷键
+    /Open\s+http:\/\/[^\/]+\/__devtools__\//,
+    // DevTools 窗口提示
+    /as\s+a\s+separate\s+window/,
+    // 窗口提示
+    /to\s+toggle\s+the\s+Vue\s+DevTools/,
+    // DevTools 切换提示
+    /__devtools__/,
+    // DevTools 路径
+    /__unocss/
+    // UnoCSS 路径
+  ];
+  return blockPatterns.some((pattern) => pattern.test(msg.trim()));
+}
+function isImportantDevMessage(msg) {
+  const importantPatterns = [
+    /ready\s+in\s+\d+ms/i,
+    // 构建完成时间
+    /built\s+in\s+\d+ms/i,
+    // 构建耗时
+    /server\s+restarted/i,
+    // 服务器重启
+    /hmr\s+update/i,
+    // HMR 更新
+    /page\s+reload/i,
+    // 页面重载
+    /\d+\s+modules?\s+transformed/i,
+    // 模块转换
+    /vite\s+v\d+\.\d+\.\d+/i,
+    // Vite 版本信息
+    /dev\s+server\s+running/i,
+    // 开发服务器状态
+    /optimizing\s+dependencies/i,
+    // 依赖优化
+    /dependencies\s+optimized/i
+    // 依赖优化完成
+  ];
+  return importantPatterns.some((pattern) => pattern.test(msg));
 }
 function viteConsolePlugin(options = {}) {
   const config = { ...defaultPluginOptions, ...options };
@@ -86,8 +137,15 @@ function viteConsolePlugin(options = {}) {
       const originalLoggerWarn = server.config.logger.warn.bind(
         server.config.logger
       );
+      const originalLoggerError = server.config.logger.error.bind(
+        server.config.logger
+      );
       server.config.logger.info = (msg, opts) => {
-        if (msg.includes("Local:") || msg.includes("Network:") || msg.includes("Vue DevTools:") || msg.includes("UnoCSS Inspector:") || msg.includes("press h + enter") || msg.includes("use --host to expose") || msg.includes("Press Alt") || msg.includes("Open http://") || msg.includes("__devtools__") || msg.includes("__unocss") || msg.includes("as a separate window") || msg.includes("to toggle the Vue DevTools")) {
+        if (isImportantDevMessage(msg)) {
+          originalLoggerInfo(msg, opts);
+          return;
+        }
+        if (shouldBlockMessage(msg)) {
           return;
         }
         originalLoggerInfo(msg, opts);
@@ -100,22 +158,45 @@ function viteConsolePlugin(options = {}) {
         }
       };
       server.config.logger.warn = (msg, opts) => {
+        if (isImportantDevMessage(msg)) {
+          originalLoggerWarn(msg, opts);
+          return;
+        }
         if (shouldBlockMessage(msg)) {
           return;
         }
         originalLoggerWarn(msg, opts);
       };
+      server.config.logger.error = originalLoggerError;
       const originalConsoleInfo = console.info;
       const originalConsoleLog = console.log;
+      const originalConsoleWarn = console.warn;
       console.info = (...args) => {
         const msg = args.join(" ");
+        if (isImportantDevMessage(msg)) {
+          originalConsoleInfo(...args);
+          return;
+        }
         if (shouldBlockMessage(msg)) return;
         originalConsoleInfo(...args);
       };
       console.log = (...args) => {
         const msg = args.join(" ");
+        if (isImportantDevMessage(msg)) {
+          originalConsoleLog(...args);
+          return;
+        }
         if (shouldBlockMessage(msg)) return;
         originalConsoleLog(...args);
+      };
+      console.warn = (...args) => {
+        const msg = args.join(" ");
+        if (isImportantDevMessage(msg)) {
+          originalConsoleWarn(...args);
+          return;
+        }
+        if (shouldBlockMessage(msg)) return;
+        originalConsoleWarn(...args);
       };
       if (!state.hasShownWelcome) {
         server.httpServer?.once("listening", () => {
