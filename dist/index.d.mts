@@ -7,11 +7,12 @@ declare global {
 }
 interface PluginOptions {
     systemName?: string;
-    version?: string;
+    description?: string;
     team?: string;
     owner?: string;
     warning?: string;
     security?: string;
+    autoVersion?: boolean;
 }
 declare const defaultPluginOptions: Required<PluginOptions>;
 declare function viteConsolePlugin(options?: PluginOptions): Plugin;

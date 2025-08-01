@@ -93,9 +93,20 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
       const originalInfo = server.config.logger.info.bind(server.config.logger)
 
       server.config.logger.info = (msg: string, opts?: any) => {
-        // 拦截并美化官方的服务器信息
-        if (msg.includes('Local:') || msg.includes('Network:') || msg.includes('Vue DevTools') || msg.includes('UnoCSS Inspector')) {
-          // 不显示原始信息，我们会在自定义面板中显示
+        // 完全拦截并隐藏官方的服务器相关信息
+        if (msg.includes('Local:') || 
+            msg.includes('Network:') || 
+            msg.includes('Vue DevTools') || 
+            msg.includes('UnoCSS Inspector') ||
+            msg.includes('press h + enter') ||
+            msg.includes('use --host to expose') ||
+            msg.includes('Press Alt') ||
+            msg.includes('Open http://') ||
+            msg.includes('__devtools__') ||
+            msg.includes('__unocss') ||
+            msg.includes('as a separate window') ||
+            msg.includes('to toggle the Vue DevTools')) {
+          // 完全不显示这些信息
           return
         }
         
@@ -124,67 +135,60 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
               second: '2-digit'
             })
 
+            // 获取服务器地址信息，确保正确处理
+            const port = server.config.server.port || 3000
+            const host = server.config.server.host || 'localhost'
+            const localUrl = `http://${host}:${port}/`
+            const networkUrl = server.resolvedUrls?.network?.[0] || '需要 --host 参数启用'
+
             console.log('')
-            originalInfo(`${colors.cyan}${colors.bright}╭─────────────────────────────────────────────────╮${colors.reset}`)
-            originalInfo(`${colors.cyan}│                                                 │${colors.reset}`)
-            originalInfo(`${colors.cyan}│  ${icons.rocket} ${colors.white}${colors.bright}${config.systemName}${colors.reset} ${colors.gray}${config.description}${colors.reset}${' '.repeat(Math.max(0, 35 - config.systemName.length - config.description.length))}${colors.cyan}│${colors.reset}`)
+            console.log(`${colors.cyan}${colors.bright}╭─────────────────────────────────────────────────╮${colors.reset}`)
+            console.log(`${colors.cyan}│                                                 │${colors.reset}`)
+            console.log(`${colors.cyan}│  ${icons.rocket} ${colors.white}${colors.bright}${config.systemName}${colors.reset} ${colors.gray}${config.description}${colors.reset}${' '.repeat(Math.max(0, 35 - config.systemName.length - config.description.length))}${colors.cyan}│${colors.reset}`)
+            console.log(`${colors.cyan}│                                                 │${colors.reset}`)
+            console.log(`${colors.cyan}├─────────────────────────────────────────────────┤${colors.reset}`)
+            console.log(`${colors.cyan}│  ${icons.local} ${colors.white}本地访问:${colors.reset} ${colors.green}${colors.bright}${localUrl}${colors.reset}${' '.repeat(Math.max(0, 32 - localUrl.length))}${colors.cyan}│${colors.reset}`)
             
-            // 获取服务器地址信息
-            const serverAddress = server.resolvedUrls?.local?.[0] || 'http://localhost:3000'
-            const networkAddress = server.resolvedUrls?.network?.[0] || '未配置网络访问'
-            
-            originalInfo(`${colors.cyan}│                                                 │${colors.reset}`)
-            originalInfo(`${colors.cyan}├─────────────────────────────────────────────────┤${colors.reset}`)
-            originalInfo(`${colors.cyan}│  🌐 ${colors.white}本地访问:${colors.reset} ${colors.green}${colors.bright}${serverAddress}${colors.reset}${' '.repeat(Math.max(0, 32 - serverAddress.length))}${colors.cyan}│${colors.reset}`)
-            if (networkAddress !== '未配置网络访问') {
-              originalInfo(`${colors.cyan}│  📡 ${colors.white}网络访问:${colors.reset} ${colors.blue}${networkAddress}${colors.reset}${' '.repeat(Math.max(0, 32 - networkAddress.length))}${colors.cyan}│${colors.reset}`)
+            if (!networkUrl.includes('需要')) {
+              console.log(`${colors.cyan}│  ${icons.network} ${colors.white}网络访问:${colors.reset} ${colors.blue}${networkUrl}${colors.reset}${' '.repeat(Math.max(0, 32 - networkUrl.length))}${colors.cyan}│${colors.reset}`)
+            } else {
+              console.log(`${colors.cyan}│  ${icons.network} ${colors.white}网络访问:${colors.reset} ${colors.gray}${networkUrl}${colors.reset}${' '.repeat(Math.max(0, 32 - networkUrl.length))}${colors.cyan}│${colors.reset}`)
             }
             
-            // 开发工具信息
-            originalInfo(`${colors.cyan}│  🔧 ${colors.white}Vue DevTools:${colors.reset} ${colors.magenta}已启用${colors.reset}${' '.repeat(26)}${colors.cyan}│${colors.reset}`)
-            originalInfo(`${colors.cyan}│  🔍 ${colors.white}UnoCSS Inspector:${colors.reset} ${colors.magenta}已启用${colors.reset}${' '.repeat(21)}${colors.cyan}│${colors.reset}`)
-            originalInfo(`${colors.cyan}├─────────────────────────────────────────────────┤${colors.reset}`)
+            console.log(`${colors.cyan}│  ${icons.devtools} ${colors.white}Vue DevTools:${colors.reset} ${colors.magenta}已启用${colors.reset}${' '.repeat(26)}${colors.cyan}│${colors.reset}`)
+            console.log(`${colors.cyan}│  ${icons.inspector} ${colors.white}UnoCSS Inspector:${colors.reset} ${colors.magenta}已启用${colors.reset}${' '.repeat(21)}${colors.cyan}│${colors.reset}`)
+            console.log(`${colors.cyan}├─────────────────────────────────────────────────┤${colors.reset}`)
             
             if (config.autoVersion) {
-              originalInfo(`${colors.cyan}│  ${icons.package} ${colors.white}版本号:${colors.reset} ${colors.green}${colors.bright}v${version}${colors.reset}${' '.repeat(Math.max(0, 33 - version.length))}${colors.cyan}│${colors.reset}`)
+              console.log(`${colors.cyan}│  ${icons.package} ${colors.white}版本号:${colors.reset} ${colors.green}${colors.bright}v${version}${colors.reset}${' '.repeat(Math.max(0, 33 - version.length))}${colors.cyan}│${colors.reset}`)
             }
             
-            originalInfo(`${colors.cyan}│  ${icons.time} ${colors.white}启动时间:${colors.reset} ${colors.blue}${currentTime}${colors.reset}${' '.repeat(Math.max(0, 24 - currentTime.length))}${colors.cyan}│${colors.reset}`)
-            originalInfo(`${colors.cyan}│  ${icons.branch} ${colors.white}分支:${colors.reset} ${colors.magenta}${gitInfo.branch}${colors.reset}${' '.repeat(Math.max(0, 37 - gitInfo.branch.length))}${colors.cyan}│${colors.reset}`)
-            originalInfo(`${colors.cyan}│  ${icons.commit} ${colors.white}提交:${colors.reset} ${colors.yellow}${gitInfo.commit}${colors.reset}${' '.repeat(Math.max(0, 37 - gitInfo.commit.length))}${colors.cyan}│${colors.reset}`)
+            console.log(`${colors.cyan}│  ${icons.time} ${colors.white}启动时间:${colors.reset} ${colors.blue}${currentTime}${colors.reset}${' '.repeat(Math.max(0, 24 - currentTime.length))}${colors.cyan}│${colors.reset}`)
+            console.log(`${colors.cyan}│  ${icons.branch} ${colors.white}分支:${colors.reset} ${colors.magenta}${gitInfo.branch}${colors.reset}${' '.repeat(Math.max(0, 37 - gitInfo.branch.length))}${colors.cyan}│${colors.reset}`)
+            console.log(`${colors.cyan}│  ${icons.commit} ${colors.white}提交:${colors.reset} ${colors.yellow}${gitInfo.commit}${colors.reset}${' '.repeat(Math.max(0, 37 - gitInfo.commit.length))}${colors.cyan}│${colors.reset}`)
             
             if (config.team) {
-              originalInfo(`${colors.cyan}│  ${icons.team} ${colors.white}架构组:${colors.reset} ${colors.blue}${config.team}${colors.reset}${' '.repeat(Math.max(0, 35 - config.team.length))}${colors.cyan}│${colors.reset}`)
+              console.log(`${colors.cyan}│  ${icons.team} ${colors.white}架构组:${colors.reset} ${colors.blue}${config.team}${colors.reset}${' '.repeat(Math.max(0, 35 - config.team.length))}${colors.cyan}│${colors.reset}`)
             }
             
             if (config.owner) {
-              originalInfo(`${colors.cyan}│  ${icons.user} ${colors.white}负责人:${colors.reset} ${colors.blue}${config.owner}${colors.reset}${' '.repeat(Math.max(0, 35 - config.owner.length))}${colors.cyan}│${colors.reset}`)
+              console.log(`${colors.cyan}│  ${icons.user} ${colors.white}负责人:${colors.reset} ${colors.blue}${config.owner}${colors.reset}${' '.repeat(Math.max(0, 35 - config.owner.length))}${colors.cyan}│${colors.reset}`)
             }
             
             if (config.warning || config.security) {
-              originalInfo(`${colors.cyan}├─────────────────────────────────────────────────┤${colors.reset}`)
+              console.log(`${colors.cyan}├─────────────────────────────────────────────────┤${colors.reset}`)
               
               if (config.warning) {
-                const warningLines = config.warning.match(/.{1,35}/g) || [config.warning]
-                warningLines.forEach((line, index) => {
-                  const icon = index === 0 ? icons.warning : ' '
-                  const label = index === 0 ? '协作警告:' : '        '
-                  originalInfo(`${colors.cyan}│  ${colors.yellow}${icon} ${colors.white}${label}${colors.reset} ${colors.yellow}${line}${colors.reset}${' '.repeat(Math.max(0, 32 - label.length - line.length))}${colors.cyan}│${colors.reset}`)
-                })
+                console.log(`${colors.cyan}│  ${colors.yellow}${icons.warning} ${colors.white}协作警告:${colors.reset} ${colors.yellow}${config.warning}${colors.reset}${' '.repeat(Math.max(0, 24 - config.warning.length))}${colors.cyan}│${colors.reset}`)
               }
               
               if (config.security) {
-                const securityLines = config.security.match(/.{1,35}/g) || [config.security]
-                securityLines.forEach((line, index) => {
-                  const icon = index === 0 ? icons.shield : ' '
-                  const label = index === 0 ? '安全警告:' : '        '
-                  originalInfo(`${colors.cyan}│  ${colors.red}${icon} ${colors.white}${label}${colors.reset} ${colors.red}${line}${colors.reset}${' '.repeat(Math.max(0, 32 - label.length - line.length))}${colors.cyan}│${colors.reset}`)
-                })
+                console.log(`${colors.cyan}│  ${colors.red}${icons.shield} ${colors.white}安全警告:${colors.reset} ${colors.red}${config.security}${colors.reset}${' '.repeat(Math.max(0, 24 - config.security.length))}${colors.cyan}│${colors.reset}`)
               }
             }
             
-            originalInfo(`${colors.cyan}│                                                 │${colors.reset}`)
-            originalInfo(`${colors.cyan}╰─────────────────────────────────────────────────╯${colors.reset}`)
+            console.log(`${colors.cyan}│                                                 │${colors.reset}`)
+            console.log(`${colors.cyan}╰─────────────────────────────────────────────────╯${colors.reset}`)
             console.log('')
             
             state.hasShownWelcome = true
