@@ -110,7 +110,7 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
         hasShownWelcome: false,
       });
 
-      // 只拦截服务器相关的日志方法，不拦截所有控制台输出
+      // 重写 logger 的 info 方法来屏蔽特定信息
       const originalLoggerInfo = server.config.logger.info.bind(
         server.config.logger
       );
@@ -119,12 +119,25 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
       );
 
       server.config.logger.info = (msg: string, opts?: any) => {
-        // 只屏蔽启动时的服务器信息，保留其他所有信息
-        if (shouldBlockMessage(msg)) {
+        // 屏蔽特定的启动信息
+        if (
+          msg.includes("Local:") ||
+          msg.includes("Network:") ||
+          msg.includes("Vue DevTools:") ||
+          msg.includes("UnoCSS Inspector:") ||
+          msg.includes("press h + enter") ||
+          msg.includes("use --host to expose") ||
+          msg.includes("Press Alt") ||
+          msg.includes("Open http://") ||
+          msg.includes("__devtools__") ||
+          msg.includes("__unocss") ||
+          msg.includes("as a separate window") ||
+          msg.includes("to toggle the Vue DevTools")
+        ) {
           return;
         }
 
-        // 保留所有其他信息，包括 HMR
+        // 保留所有其他信息
         originalLoggerInfo(msg, opts);
 
         if (msg.includes("server restarted")) {
@@ -141,6 +154,22 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
           return;
         }
         originalLoggerWarn(msg, opts);
+      };
+
+      // 同时拦截 console 输出（因为某些信息可能通过 console 输出）
+      const originalConsoleInfo = console.info;
+      const originalConsoleLog = console.log;
+
+      console.info = (...args) => {
+        const msg = args.join(" ");
+        if (shouldBlockMessage(msg)) return;
+        originalConsoleInfo(...args);
+      };
+
+      console.log = (...args) => {
+        const msg = args.join(" ");
+        if (shouldBlockMessage(msg)) return;
+        originalConsoleLog(...args);
       };
 
       if (!state.hasShownWelcome) {

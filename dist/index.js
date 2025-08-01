@@ -66,10 +66,7 @@ var colors = {
   gray: "\x1B[90m"
 };
 function shouldBlockMessage(msg) {
-  if (msg.includes("[vite] hmr update") || msg.includes("[vite] page reload") || msg.includes("[vite] css hot updated") || msg.includes("[vite] hot updated") || msg.includes("hmr update") || msg.includes("page reload")) {
-    return false;
-  }
-  return msg.includes("Local:") || msg.includes("Network:") || msg.includes("Vue DevTools") || msg.includes("UnoCSS Inspector") || msg.includes("press h + enter") || msg.includes("use --host to expose") || msg.includes("Press Alt") || msg.includes("Open http://") || msg.includes("__devtools__") || msg.includes("__unocss") || msg.includes("as a separate window") || msg.includes("to toggle the Vue DevTools") || msg.includes("\u279C  Local:") || msg.includes("\u279C  Network:");
+  return msg.includes("\u279C  Local:") || msg.includes("\u279C  Network:") || msg.includes("\u279C  Vue DevTools:") || msg.includes("\u279C  UnoCSS Inspector:") || msg.includes("\u279C  press h + enter");
 }
 function viteConsolePlugin(options = {}) {
   const config = { ...defaultPluginOptions, ...options };
@@ -126,6 +123,7 @@ function viteConsolePlugin(options = {}) {
             const localUrl = `http://${host}:${port}/`;
             const networkUrl = server.resolvedUrls?.network?.[0] || "\u9700\u8981 --host \u53C2\u6570\u542F\u7528";
             console.log("");
+            console.log(`${colors.gray}${"\u2500".repeat(50)}${colors.reset}`);
             console.log(
               `${colors.cyan}${colors.bright}\u{1F680} ${config.systemName}${colors.reset} ${colors.gray}${config.description}${colors.reset}`
             );
@@ -154,17 +152,17 @@ function viteConsolePlugin(options = {}) {
             );
             if (config.autoVersion) {
               console.log(
-                `   ${colors.white}\u7248\u672C\u53F7${colors.reset}       ${colors.green}${colors.bright}v${version}${colors.reset}`
+                `   ${colors.green}\u25CF${colors.reset} ${colors.white}\u7248\u672C\u53F7${colors.reset}       ${colors.green}${colors.bright}v${version}${colors.reset}`
               );
             }
             console.log(
-              `   ${colors.white}\u542F\u52A8\u65F6\u95F4${colors.reset}     ${colors.blue}${currentTime}${colors.reset}`
+              `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u542F\u52A8\u65F6\u95F4${colors.reset}     ${colors.blue}${currentTime}${colors.reset}`
             );
             console.log(
-              `   ${colors.white}Git \u5206\u652F${colors.reset}     ${colors.magenta}${gitInfo.branch}${colors.reset}`
+              `   ${colors.magenta}\u25CF${colors.reset} ${colors.white}Git \u5206\u652F${colors.reset}     ${colors.magenta}${gitInfo.branch}${colors.reset}`
             );
             console.log(
-              `   ${colors.white}\u63D0\u4EA4\u54C8\u5E0C${colors.reset}     ${colors.yellow}${gitInfo.commit}${colors.reset}`
+              `   ${colors.yellow}\u25CF${colors.reset} ${colors.white}\u63D0\u4EA4\u54C8\u5E0C${colors.reset}     ${colors.yellow}${gitInfo.commit}${colors.reset}`
             );
             if (config.team || config.owner) {
               console.log("");
@@ -173,12 +171,12 @@ function viteConsolePlugin(options = {}) {
               );
               if (config.team) {
                 console.log(
-                  `   ${colors.white}\u67B6\u6784\u7EC4${colors.reset}       ${colors.blue}${config.team}${colors.reset}`
+                  `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u67B6\u6784\u7EC4${colors.reset}       ${colors.blue}${config.team}${colors.reset}`
                 );
               }
               if (config.owner) {
                 console.log(
-                  `   ${colors.white}\u8D1F\u8D23\u4EBA${colors.reset}       ${colors.blue}${config.owner}${colors.reset}`
+                  `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u8D1F\u8D23\u4EBA${colors.reset}       ${colors.blue}${config.owner}${colors.reset}`
                 );
               }
             }
@@ -202,6 +200,7 @@ function viteConsolePlugin(options = {}) {
             console.log(
               `${colors.green}${colors.bright}\u2728 \u542F\u52A8\u6210\u529F\uFF01${colors.reset} ${colors.gray}\u5F00\u53D1\u670D\u52A1\u5668\u5DF2\u5C31\u7EEA${colors.reset}`
             );
+            console.log(`${colors.gray}${"\u2500".repeat(50)}${colors.reset}`);
             console.log("");
             state.hasShownWelcome = true;
           }, 350);
