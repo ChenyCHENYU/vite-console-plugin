@@ -41,17 +41,24 @@ var colors = {
   gray: "\x1B[90m"
 };
 function shouldBlockMessage(msg) {
+  const cleanMsg = msg.replace(/\x1b\[[0-9;]*m/g, "").trim();
   const blockPatterns = [
-    /➜\s+Local:\s+http:\/\/[^\/]+\/?,?\s*$/,
+    /^➜\s+Local:\s+http:\/\/.*$/,
     // Local 地址
-    /➜\s+Network:\s+use\s+--host\s+to\s+expose/,
-    // Network 提示
-    /➜\s+Vue DevTools:/,
-    // Vue DevTools 相关
-    /➜\s+UnoCSS Inspector:/,
-    // UnoCSS Inspector
-    /➜\s+press\s+h\s+\+\s+enter\s+to\s+show\s+help/,
+    /^➜\s+Network:\s+use\s+--host\s+to\s+expose.*$/,
+    // Network 提示  
+    /^➜\s+press\s+h\s+\+\s+enter\s+to\s+show\s+help.*$/,
     // 帮助提示
+    /^➜\s+Vue DevTools:/,
+    // Vue DevTools 相关
+    /^➜\s+UnoCSS Inspector:/,
+    // UnoCSS Inspector
+    /Local:\s+http:\/\/.*$/,
+    // 不带 ➜ 的 Local
+    /Network:\s+use\s+--host\s+to\s+expose/,
+    // 不带 ➜ 的 Network
+    /press\s+h\s+\+\s+enter\s+to\s+show\s+help/,
+    // 不带 ➜ 的帮助
     /use\s+--host\s+to\s+expose/,
     // host 参数提示
     /Press\s+Alt\s+\+\s+Shift\s+\+\s+D/,
@@ -67,7 +74,7 @@ function shouldBlockMessage(msg) {
     /__unocss/
     // UnoCSS 路径
   ];
-  return blockPatterns.some((pattern) => pattern.test(msg.trim()));
+  return blockPatterns.some((pattern) => pattern.test(cleanMsg));
 }
 function isImportantDevMessage(msg) {
   const importantPatterns = [
