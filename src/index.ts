@@ -37,16 +37,108 @@ const getVersionInfo = () => {
   }
 };
 
-// 获取 Git 信息
+// 获取 Git 信息（增强版）
 const getGitInfo = () => {
   try {
     const branch = execSync("git rev-parse --abbrev-ref HEAD")
       .toString()
       .trim();
     const commit = execSync("git rev-parse --short HEAD").toString().trim();
-    return { branch, commit };
+    
+    // 获取Git状态信息
+    const gitStatus = getGitStatus(branch);
+    
+    return { 
+      branch, 
+      commit,
+      branchStatus: gitStatus
+    };
   } catch {
-    return { branch: "unknown", commit: "unknown" };
+    return { 
+      branch: "unknown", 
+      commit: "unknown",
+      branchStatus: "unknown (离线状态 📱)"
+    };
+  }
+};
+
+// 获取Git状态（新增函数）
+const getGitStatus = (currentBranch: string): string => {
+  try {
+    // 检查是否有远程仓库
+    execSync("git remote", { stdio: 'pipe' });
+    
+    let statusParts: string[] = [];
+    
+    // 1. 检查与对应远程分支的关系
+    const remoteBranch = `origin/${currentBranch}`;
+    try {
+      // 检查远程分支是否存在
+      execSync(`git show-ref --verify --quiet refs/remotes/${remoteBranch}`, { stdio: 'pipe' });
+      
+      // 获取本地相对于远程分支的状态
+      const behindCount = execSync(`git rev-list --count HEAD..${remoteBranch}`, { stdio: 'pipe' })
+        .toString().trim();
+      const aheadCount = execSync(`git rev-list --count ${remoteBranch}..HEAD`, { stdio: 'pipe' })
+        .toString().trim();
+      
+      if (behindCount === '0' && aheadCount === '0') {
+        statusParts.push('与远程同步 ✅');
+      } else if (behindCount > '0' && aheadCount === '0') {
+        statusParts.push(`落后远程 ${behindCount} 个提交 🔄`);
+      } else if (behindCount === '0' && aheadCount > '0') {
+        statusParts.push(`领先远程 ${aheadCount} 个提交 ⬆️`);
+      } else {
+        statusParts.push(`分叉状态 🔀`);
+      }
+    } catch {
+      // 远程分支不存在
+      statusParts.push('本地分支 📱');
+    }
+    
+    // 2. 如果不是main分支，检查与main的关系
+    if (currentBranch !== 'main' && currentBranch !== 'master') {
+      try {
+        // 检查origin/main是否存在
+        let mainBranch = 'origin/main';
+        try {
+          execSync(`git show-ref --verify --quiet refs/remotes/origin/main`, { stdio: 'pipe' });
+        } catch {
+          try {
+            execSync(`git show-ref --verify --quiet refs/remotes/origin/master`, { stdio: 'pipe' });
+            mainBranch = 'origin/master';
+          } catch {
+            throw new Error('No main branch found');
+          }
+        }
+        
+        // 找到与main的共同祖先
+        const mergeBase = execSync(`git merge-base HEAD ${mainBranch}`, { stdio: 'pipe' })
+          .toString().trim();
+        const aheadOfMain = execSync(`git rev-list --count ${mergeBase}..HEAD`, { stdio: 'pipe' })
+          .toString().trim();
+        const behindMain = execSync(`git rev-list --count HEAD..${mainBranch}`, { stdio: 'pipe' })
+          .toString().trim();
+        
+        if (aheadOfMain === '0' && behindMain === '0') {
+          statusParts.push('基于 main 最新代码 ✅');
+        } else if (aheadOfMain > '0') {
+          statusParts.push(`领先 main ${aheadOfMain} 个提交 ⬆️`);
+        }
+        
+        if (behindMain > '0') {
+          statusParts[statusParts.length - 1] = statusParts[statusParts.length - 1].replace(' ⬆️', '') + ` (main 领先 ${behindMain} 个提交) 🔄`;
+        }
+        
+      } catch {
+        // 无法获取main分支信息
+      }
+    }
+    
+    return `${currentBranch} (${statusParts.join(' | ')})`;
+    
+  } catch {
+    return `${currentBranch} (离线状态 📱)`;
   }
 };
 
@@ -293,18 +385,18 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
 
             if (config.autoVersion) {
               console.log(
-                `   ${colors.green}●${colors.reset} ${colors.white}版本号${colors.reset}       ${colors.green}${colors.bright}v${version}${colors.reset}`
+                `   ${colors.green}●${colors.reset} ${colors.white}版本号${colors.reset}           ${colors.green}${colors.bright}v${version}${colors.reset}`
               );
             }
 
             console.log(
-              `   ${colors.blue}●${colors.reset} ${colors.white}启动时间${colors.reset}     ${colors.blue}${currentTime}${colors.reset}`
+              `   ${colors.blue}●${colors.reset} ${colors.white}启动时间${colors.reset}         ${colors.blue}${currentTime}${colors.reset}`
             );
             console.log(
-              `   ${colors.magenta}●${colors.reset} ${colors.white}Git 分支${colors.reset}     ${colors.magenta}${gitInfo.branch}${colors.reset}`
+              `   ${colors.magenta}●${colors.reset} ${colors.white}Git 分支状态${colors.reset}     ${colors.magenta}${gitInfo.branchStatus}${colors.reset}`
             );
             console.log(
-              `   ${colors.yellow}●${colors.reset} ${colors.white}提交哈希${colors.reset}     ${colors.yellow}${gitInfo.commit}${colors.reset}`
+              `   ${colors.yellow}●${colors.reset} ${colors.white}提交哈希${colors.reset}         ${colors.yellow}${gitInfo.commit}${colors.reset}`
             );
 
             // 团队信息
@@ -316,13 +408,13 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
 
               if (config.team) {
                 console.log(
-                  `   ${colors.blue}●${colors.reset} ${colors.white}架构组${colors.reset}       ${colors.blue}${config.team}${colors.reset}`
+                  `   ${colors.blue}●${colors.reset} ${colors.white}架构组${colors.reset}           ${colors.blue}${config.team}${colors.reset}`
                 );
               }
 
               if (config.owner) {
                 console.log(
-                  `   ${colors.blue}●${colors.reset} ${colors.white}负责人${colors.reset}       ${colors.blue}${config.owner}${colors.reset}`
+                  `   ${colors.blue}●${colors.reset} ${colors.white}负责人${colors.reset}           ${colors.blue}${config.owner}${colors.reset}`
                 );
               }
             }
