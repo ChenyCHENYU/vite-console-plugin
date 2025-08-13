@@ -385,18 +385,18 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
 
             if (config.autoVersion) {
               console.log(
-                `   ${colors.green}●${colors.reset} ${colors.white}版本号${colors.reset}           ${colors.green}${colors.bright}v${version}${colors.reset}`
+                `   ${colors.green}●${colors.reset} ${colors.white}版本号${colors.reset}       ${colors.green}${colors.bright}v${version}${colors.reset}`
               );
             }
 
             console.log(
-              `   ${colors.blue}●${colors.reset} ${colors.white}启动时间${colors.reset}         ${colors.blue}${currentTime}${colors.reset}`
+              `   ${colors.blue}●${colors.reset} ${colors.white}启动时间${colors.reset}     ${colors.blue}${currentTime}${colors.reset}`
             );
             console.log(
-              `   ${colors.magenta}●${colors.reset} ${colors.white}Git 分支状态${colors.reset}     ${colors.magenta}${gitInfo.branchStatus}${colors.reset}`
+              `   ${colors.magenta}●${colors.reset} ${colors.white}Git 分支${colors.reset}     ${colors.magenta}${gitInfo.branchStatus}${colors.reset}`
             );
             console.log(
-              `   ${colors.yellow}●${colors.reset} ${colors.white}提交哈希${colors.reset}         ${colors.yellow}${gitInfo.commit}${colors.reset}`
+              `   ${colors.yellow}●${colors.reset} ${colors.white}提交哈希${colors.reset}     ${colors.yellow}${gitInfo.commit}${colors.reset}`
             );
 
             // 团队信息
@@ -408,13 +408,13 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
 
               if (config.team) {
                 console.log(
-                  `   ${colors.blue}●${colors.reset} ${colors.white}架构组${colors.reset}           ${colors.blue}${config.team}${colors.reset}`
+                  `   ${colors.blue}●${colors.reset} ${colors.white}架构组${colors.reset}       ${colors.blue}${config.team}${colors.reset}`
                 );
               }
 
               if (config.owner) {
                 console.log(
-                  `   ${colors.blue}●${colors.reset} ${colors.white}负责人${colors.reset}           ${colors.blue}${config.owner}${colors.reset}`
+                  `   ${colors.blue}●${colors.reset} ${colors.white}负责人${colors.reset}       ${colors.blue}${config.owner}${colors.reset}`
                 );
               }
             }

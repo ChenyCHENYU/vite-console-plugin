@@ -22,9 +22,71 @@ var getGitInfo = () => {
   try {
     const branch = execSync("git rev-parse --abbrev-ref HEAD").toString().trim();
     const commit = execSync("git rev-parse --short HEAD").toString().trim();
-    return { branch, commit };
+    const gitStatus = getGitStatus(branch);
+    return {
+      branch,
+      commit,
+      branchStatus: gitStatus
+    };
   } catch {
-    return { branch: "unknown", commit: "unknown" };
+    return {
+      branch: "unknown",
+      commit: "unknown",
+      branchStatus: "unknown (\u79BB\u7EBF\u72B6\u6001 \u{1F4F1})"
+    };
+  }
+};
+var getGitStatus = (currentBranch) => {
+  try {
+    execSync("git remote", { stdio: "pipe" });
+    let statusParts = [];
+    const remoteBranch = `origin/${currentBranch}`;
+    try {
+      execSync(`git show-ref --verify --quiet refs/remotes/${remoteBranch}`, { stdio: "pipe" });
+      const behindCount = execSync(`git rev-list --count HEAD..${remoteBranch}`, { stdio: "pipe" }).toString().trim();
+      const aheadCount = execSync(`git rev-list --count ${remoteBranch}..HEAD`, { stdio: "pipe" }).toString().trim();
+      if (behindCount === "0" && aheadCount === "0") {
+        statusParts.push("\u4E0E\u8FDC\u7A0B\u540C\u6B65 \u2705");
+      } else if (behindCount > "0" && aheadCount === "0") {
+        statusParts.push(`\u843D\u540E\u8FDC\u7A0B ${behindCount} \u4E2A\u63D0\u4EA4 \u{1F504}`);
+      } else if (behindCount === "0" && aheadCount > "0") {
+        statusParts.push(`\u9886\u5148\u8FDC\u7A0B ${aheadCount} \u4E2A\u63D0\u4EA4 \u2B06\uFE0F`);
+      } else {
+        statusParts.push(`\u5206\u53C9\u72B6\u6001 \u{1F500}`);
+      }
+    } catch {
+      statusParts.push("\u672C\u5730\u5206\u652F \u{1F4F1}");
+    }
+    if (currentBranch !== "main" && currentBranch !== "master") {
+      try {
+        let mainBranch = "origin/main";
+        try {
+          execSync(`git show-ref --verify --quiet refs/remotes/origin/main`, { stdio: "pipe" });
+        } catch {
+          try {
+            execSync(`git show-ref --verify --quiet refs/remotes/origin/master`, { stdio: "pipe" });
+            mainBranch = "origin/master";
+          } catch {
+            throw new Error("No main branch found");
+          }
+        }
+        const mergeBase = execSync(`git merge-base HEAD ${mainBranch}`, { stdio: "pipe" }).toString().trim();
+        const aheadOfMain = execSync(`git rev-list --count ${mergeBase}..HEAD`, { stdio: "pipe" }).toString().trim();
+        const behindMain = execSync(`git rev-list --count HEAD..${mainBranch}`, { stdio: "pipe" }).toString().trim();
+        if (aheadOfMain === "0" && behindMain === "0") {
+          statusParts.push("\u57FA\u4E8E main \u6700\u65B0\u4EE3\u7801 \u2705");
+        } else if (aheadOfMain > "0") {
+          statusParts.push(`\u9886\u5148 main ${aheadOfMain} \u4E2A\u63D0\u4EA4 \u2B06\uFE0F`);
+        }
+        if (behindMain > "0") {
+          statusParts[statusParts.length - 1] = statusParts[statusParts.length - 1].replace(" \u2B06\uFE0F", "") + ` (main \u9886\u5148 ${behindMain} \u4E2A\u63D0\u4EA4) \u{1F504}`;
+        }
+      } catch {
+      }
+    }
+    return `${currentBranch} (${statusParts.join(" | ")})`;
+  } catch {
+    return `${currentBranch} (\u79BB\u7EBF\u72B6\u6001 \u{1F4F1})`;
   }
 };
 var colors = {
@@ -200,7 +262,7 @@ function viteConsolePlugin(options = {}) {
             console.log("");
             console.log(`${colors.gray}${"\u2500".repeat(50)}${colors.reset}`);
             console.log(
-              `${colors.cyan}${colors.bright}\u{1F680} ${config.systemName}${colors.reset} ${colors.gray}${config.description}${colors.reset}`
+              `${colors.cyan}${colors.bright}\u{1F916} ${config.systemName}${colors.reset} ${colors.gray}${config.description}${colors.reset}`
             );
             console.log("");
             console.log(
@@ -227,17 +289,17 @@ function viteConsolePlugin(options = {}) {
             );
             if (config.autoVersion) {
               console.log(
-                `   ${colors.green}\u25CF${colors.reset} ${colors.white}\u7248\u672C\u53F7${colors.reset}       ${colors.green}${colors.bright}v${version}${colors.reset}`
+                `   ${colors.green}\u25CF${colors.reset} ${colors.white}\u7248\u672C\u53F7${colors.reset}           ${colors.green}${colors.bright}v${version}${colors.reset}`
               );
             }
             console.log(
-              `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u542F\u52A8\u65F6\u95F4${colors.reset}     ${colors.blue}${currentTime}${colors.reset}`
+              `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u542F\u52A8\u65F6\u95F4${colors.reset}         ${colors.blue}${currentTime}${colors.reset}`
             );
             console.log(
-              `   ${colors.magenta}\u25CF${colors.reset} ${colors.white}Git \u5206\u652F${colors.reset}     ${colors.magenta}${gitInfo.branch}${colors.reset}`
+              `   ${colors.magenta}\u25CF${colors.reset} ${colors.white}Git \u5206\u652F\u72B6\u6001${colors.reset}     ${colors.magenta}${gitInfo.branchStatus}${colors.reset}`
             );
             console.log(
-              `   ${colors.yellow}\u25CF${colors.reset} ${colors.white}\u63D0\u4EA4\u54C8\u5E0C${colors.reset}     ${colors.yellow}${gitInfo.commit}${colors.reset}`
+              `   ${colors.yellow}\u25CF${colors.reset} ${colors.white}\u63D0\u4EA4\u54C8\u5E0C${colors.reset}         ${colors.yellow}${gitInfo.commit}${colors.reset}`
             );
             if (config.team || config.owner) {
               console.log("");
@@ -246,12 +308,12 @@ function viteConsolePlugin(options = {}) {
               );
               if (config.team) {
                 console.log(
-                  `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u67B6\u6784\u7EC4${colors.reset}       ${colors.blue}${config.team}${colors.reset}`
+                  `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u67B6\u6784\u7EC4${colors.reset}           ${colors.blue}${config.team}${colors.reset}`
                 );
               }
               if (config.owner) {
                 console.log(
-                  `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u8D1F\u8D23\u4EBA${colors.reset}       ${colors.blue}${config.owner}${colors.reset}`
+                  `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u8D1F\u8D23\u4EBA${colors.reset}           ${colors.blue}${config.owner}${colors.reset}`
                 );
               }
             }
