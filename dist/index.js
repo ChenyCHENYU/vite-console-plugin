@@ -314,17 +314,17 @@ function viteConsolePlugin(options = {}) {
             );
             if (config.autoVersion) {
               console.log(
-                `   ${colors.green}\u25CF${colors.reset} ${colors.white}\u7248\u672C\u53F7${colors.reset}           ${colors.green}${colors.bright}v${version}${colors.reset}`
+                `   ${colors.green}\u25CF${colors.reset} ${colors.white}\u7248\u672C\u53F7${colors.reset}       ${colors.green}${colors.bright}v${version}${colors.reset}`
               );
             }
             console.log(
-              `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u542F\u52A8\u65F6\u95F4${colors.reset}         ${colors.blue}${currentTime}${colors.reset}`
+              `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u542F\u52A8\u65F6\u95F4${colors.reset}     ${colors.blue}${currentTime}${colors.reset}`
             );
             console.log(
-              `   ${colors.magenta}\u25CF${colors.reset} ${colors.white}Git \u5206\u652F\u72B6\u6001${colors.reset}     ${colors.magenta}${gitInfo.branchStatus}${colors.reset}`
+              `   ${colors.magenta}\u25CF${colors.reset} ${colors.white}Git \u5206\u652F${colors.reset}     ${colors.magenta}${gitInfo.branchStatus}${colors.reset}`
             );
             console.log(
-              `   ${colors.yellow}\u25CF${colors.reset} ${colors.white}\u63D0\u4EA4\u54C8\u5E0C${colors.reset}         ${colors.yellow}${gitInfo.commit}${colors.reset}`
+              `   ${colors.yellow}\u25CF${colors.reset} ${colors.white}\u63D0\u4EA4\u54C8\u5E0C${colors.reset}     ${colors.yellow}${gitInfo.commit}${colors.reset}`
             );
             if (config.team || config.owner) {
               console.log("");
@@ -333,12 +333,12 @@ function viteConsolePlugin(options = {}) {
               );
               if (config.team) {
                 console.log(
-                  `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u67B6\u6784\u7EC4${colors.reset}           ${colors.blue}${config.team}${colors.reset}`
+                  `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u67B6\u6784\u7EC4${colors.reset}       ${colors.blue}${config.team}${colors.reset}`
                 );
               }
               if (config.owner) {
                 console.log(
-                  `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u8D1F\u8D23\u4EBA${colors.reset}           ${colors.blue}${config.owner}${colors.reset}`
+                  `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u8D1F\u8D23\u4EBA${colors.reset}       ${colors.blue}${config.owner}${colors.reset}`
                 );
               }
             }
