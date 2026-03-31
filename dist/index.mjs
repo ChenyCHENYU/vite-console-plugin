@@ -1,6 +1,7 @@
 // src/index.ts
 import { readFileSync } from "fs";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
+import path from "path";
 var defaultPluginOptions = {
   systemName: "Robot_Admin",
   description: "\u540E\u53F0\u7BA1\u7406\u7CFB\u7EDF",
@@ -8,11 +9,14 @@ var defaultPluginOptions = {
   owner: "CHENY",
   warning: "\u8BF7\u52FF\u968F\u610F\u4FEE\u6539\u914D\u7F6E\u6587\u4EF6",
   security: "\u7981\u6B62\u90E8\u7F72\u672A\u52A0\u5BC6\u7684\u654F\u611F\u6570\u636E",
-  autoVersion: true
+  autoVersion: true,
+  devtools: ""
 };
-var getVersionInfo = () => {
+var getVersionInfo = (root) => {
   try {
-    const packageJson = JSON.parse(readFileSync("package.json", "utf-8"));
+    const packageJson = JSON.parse(
+      readFileSync(path.resolve(root, "package.json"), "utf-8")
+    );
     return packageJson.version || "1.0.0";
   } catch {
     return "1.0.0";
@@ -20,8 +24,8 @@ var getVersionInfo = () => {
 };
 var getGitInfo = () => {
   try {
-    const branch = execSync("git rev-parse --abbrev-ref HEAD").toString().trim();
-    const commit = execSync("git rev-parse --short HEAD").toString().trim();
+    const branch = execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"]).toString().trim();
+    const commit = execFileSync("git", ["rev-parse", "--short", "HEAD"]).toString().trim();
     const gitStatus = getGitStatus(branch);
     return {
       branch,
@@ -38,18 +42,18 @@ var getGitInfo = () => {
 };
 var getGitStatus = (currentBranch) => {
   try {
-    execSync("git remote", { stdio: "pipe" });
+    execFileSync("git", ["remote"], { stdio: "pipe" });
     let statusParts = [];
     const remoteBranch = `origin/${currentBranch}`;
     try {
-      execSync(`git show-ref --verify --quiet refs/remotes/${remoteBranch}`, { stdio: "pipe" });
-      const behindCount = execSync(`git rev-list --count HEAD..${remoteBranch}`, { stdio: "pipe" }).toString().trim();
-      const aheadCount = execSync(`git rev-list --count ${remoteBranch}..HEAD`, { stdio: "pipe" }).toString().trim();
-      if (behindCount === "0" && aheadCount === "0") {
+      execFileSync("git", ["show-ref", "--verify", "--quiet", `refs/remotes/${remoteBranch}`], { stdio: "pipe" });
+      const behindCount = Number(execFileSync("git", ["rev-list", "--count", `HEAD..${remoteBranch}`], { stdio: "pipe" }).toString().trim());
+      const aheadCount = Number(execFileSync("git", ["rev-list", "--count", `${remoteBranch}..HEAD`], { stdio: "pipe" }).toString().trim());
+      if (behindCount === 0 && aheadCount === 0) {
         statusParts.push("\u4E0E\u8FDC\u7A0B\u540C\u6B65 \u2705");
-      } else if (behindCount > "0" && aheadCount === "0") {
+      } else if (behindCount > 0 && aheadCount === 0) {
         statusParts.push(`\u843D\u540E\u8FDC\u7A0B ${behindCount} \u4E2A\u63D0\u4EA4 \u{1F504}`);
-      } else if (behindCount === "0" && aheadCount > "0") {
+      } else if (behindCount === 0 && aheadCount > 0) {
         statusParts.push(`\u9886\u5148\u8FDC\u7A0B ${aheadCount} \u4E2A\u63D0\u4EA4 \u2B06\uFE0F`);
       } else {
         statusParts.push(`\u5206\u53C9\u72B6\u6001 \u{1F500}`);
@@ -61,24 +65,24 @@ var getGitStatus = (currentBranch) => {
       try {
         let mainBranch = "origin/main";
         try {
-          execSync(`git show-ref --verify --quiet refs/remotes/origin/main`, { stdio: "pipe" });
+          execFileSync("git", ["show-ref", "--verify", "--quiet", "refs/remotes/origin/main"], { stdio: "pipe" });
         } catch {
           try {
-            execSync(`git show-ref --verify --quiet refs/remotes/origin/master`, { stdio: "pipe" });
+            execFileSync("git", ["show-ref", "--verify", "--quiet", "refs/remotes/origin/master"], { stdio: "pipe" });
             mainBranch = "origin/master";
           } catch {
             throw new Error("No main branch found");
           }
         }
-        const mergeBase = execSync(`git merge-base HEAD ${mainBranch}`, { stdio: "pipe" }).toString().trim();
-        const aheadOfMain = execSync(`git rev-list --count ${mergeBase}..HEAD`, { stdio: "pipe" }).toString().trim();
-        const behindMain = execSync(`git rev-list --count HEAD..${mainBranch}`, { stdio: "pipe" }).toString().trim();
-        if (aheadOfMain === "0" && behindMain === "0") {
+        const mergeBase = execFileSync("git", ["merge-base", "HEAD", mainBranch], { stdio: "pipe" }).toString().trim();
+        const aheadOfMain = Number(execFileSync("git", ["rev-list", "--count", `${mergeBase}..HEAD`], { stdio: "pipe" }).toString().trim());
+        const behindMain = Number(execFileSync("git", ["rev-list", "--count", `HEAD..${mainBranch}`], { stdio: "pipe" }).toString().trim());
+        if (aheadOfMain === 0 && behindMain === 0) {
           statusParts.push("\u57FA\u4E8E main \u6700\u65B0\u4EE3\u7801 \u2705");
-        } else if (aheadOfMain > "0") {
+        } else if (aheadOfMain > 0) {
           statusParts.push(`\u9886\u5148 main ${aheadOfMain} \u4E2A\u63D0\u4EA4 \u2B06\uFE0F`);
         }
-        if (behindMain > "0") {
+        if (behindMain > 0) {
           statusParts[statusParts.length - 1] = statusParts[statusParts.length - 1].replace(" \u2B06\uFE0F", "") + ` (main \u9886\u5148 ${behindMain} \u4E2A\u63D0\u4EA4) \u{1F504}`;
         }
       } catch {
@@ -215,6 +219,11 @@ function viteConsolePlugin(options = {}) {
       const originalConsoleInfo = console.info;
       const originalConsoleLog = console.log;
       const originalConsoleWarn = console.warn;
+      server.httpServer?.on("close", () => {
+        console.info = originalConsoleInfo;
+        console.log = originalConsoleLog;
+        console.warn = originalConsoleWarn;
+      });
       console.info = (...args) => {
         const msg = args.join(" ");
         if (isImportantDevMessage(msg)) {
@@ -244,8 +253,8 @@ function viteConsolePlugin(options = {}) {
       };
       if (!state.hasShownWelcome) {
         server.httpServer?.once("listening", () => {
-          setTimeout(() => {
-            const version = config.autoVersion ? getVersionInfo() : config.systemName;
+          const printBanner = () => {
+            const version = config.autoVersion ? getVersionInfo(server.config.root) : config.systemName;
             const gitInfo = getGitInfo();
             const currentTime = (/* @__PURE__ */ new Date()).toLocaleString("zh-CN", {
               year: "numeric",
@@ -255,9 +264,7 @@ function viteConsolePlugin(options = {}) {
               minute: "2-digit",
               second: "2-digit"
             });
-            const port = server.config.server.port || 3e3;
-            const host = server.config.server.host || "localhost";
-            const localUrl = `http://${host}:${port}/`;
+            const localUrl = server.resolvedUrls?.local?.[0] || `http://localhost:${server.config.server.port || 5173}/`;
             const networkUrl = server.resolvedUrls?.network?.[0] || "\u9700\u8981 --host \u53C2\u6570\u542F\u7528";
             console.log("");
             console.log(`${colors.gray}${"\u2500".repeat(50)}${colors.reset}`);
@@ -269,37 +276,39 @@ function viteConsolePlugin(options = {}) {
               `${colors.white}${colors.bright}\u26A1 \u670D\u52A1\u5668\u4FE1\u606F${colors.reset}`
             );
             console.log(
-              `   ${colors.green}\u25CF${colors.reset} ${colors.white}\u672C\u5730\u8BBF\u95EE${colors.reset}   ${colors.green}${colors.bright}${localUrl}${colors.reset}`
+              `   ${colors.green}\u25CF${colors.reset} ${colors.white}\u672C\u5730\u8BBF\u95EE${colors.reset}    ${colors.green}${colors.bright}${localUrl}${colors.reset}`
             );
             if (!networkUrl.includes("\u9700\u8981")) {
               console.log(
-                `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u7F51\u7EDC\u8BBF\u95EE${colors.reset}   ${colors.blue}${networkUrl}${colors.reset}`
+                `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u7F51\u7EDC\u8BBF\u95EE${colors.reset}    ${colors.blue}${networkUrl}${colors.reset}`
               );
             } else {
               console.log(
-                `   ${colors.gray}\u25CF${colors.reset} ${colors.white}\u7F51\u7EDC\u8BBF\u95EE${colors.reset}   ${colors.gray}${networkUrl}${colors.reset}`
+                `   ${colors.gray}\u25CF${colors.reset} ${colors.white}\u7F51\u7EDC\u8BBF\u95EE${colors.reset}    ${colors.gray}${networkUrl}${colors.reset}`
               );
             }
-            console.log(
-              `   ${colors.magenta}\u25CF${colors.reset} ${colors.white}\u5F00\u53D1\u5DE5\u5177${colors.reset}   ${colors.magenta}Vue DevTools & UnoCSS Inspector${colors.reset}`
-            );
+            if (config.devtools) {
+              console.log(
+                `   ${colors.magenta}\u25CF${colors.reset} ${colors.white}\u5F00\u53D1\u5DE5\u5177${colors.reset}    ${colors.magenta}${config.devtools}${colors.reset}`
+              );
+            }
             console.log("");
             console.log(
               `${colors.white}${colors.bright}\u{1F4E6} \u9879\u76EE\u4FE1\u606F${colors.reset}`
             );
             if (config.autoVersion) {
               console.log(
-                `   ${colors.green}\u25CF${colors.reset} ${colors.white}\u7248\u672C\u53F7${colors.reset}       ${colors.green}${colors.bright}v${version}${colors.reset}`
+                `   ${colors.green}\u25CF${colors.reset} ${colors.white}\u7248\u672C\u53F7${colors.reset}      ${colors.green}${colors.bright}v${version}${colors.reset}`
               );
             }
             console.log(
-              `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u542F\u52A8\u65F6\u95F4${colors.reset}     ${colors.blue}${currentTime}${colors.reset}`
+              `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u542F\u52A8\u65F6\u95F4${colors.reset}    ${colors.blue}${currentTime}${colors.reset}`
             );
             console.log(
-              `   ${colors.magenta}\u25CF${colors.reset} ${colors.white}Git \u5206\u652F${colors.reset}     ${colors.magenta}${gitInfo.branchStatus}${colors.reset}`
+              `   ${colors.magenta}\u25CF${colors.reset} ${colors.white}Git \u5206\u652F${colors.reset}    ${colors.magenta}${gitInfo.branchStatus}${colors.reset}`
             );
             console.log(
-              `   ${colors.yellow}\u25CF${colors.reset} ${colors.white}\u63D0\u4EA4\u54C8\u5E0C${colors.reset}     ${colors.yellow}${gitInfo.commit}${colors.reset}`
+              `   ${colors.yellow}\u25CF${colors.reset} ${colors.white}\u63D0\u4EA4\u54C8\u5E0C${colors.reset}    ${colors.yellow}${gitInfo.commit}${colors.reset}`
             );
             if (config.team || config.owner) {
               console.log("");
@@ -308,12 +317,12 @@ function viteConsolePlugin(options = {}) {
               );
               if (config.team) {
                 console.log(
-                  `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u67B6\u6784\u7EC4${colors.reset}       ${colors.blue}${config.team}${colors.reset}`
+                  `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u67B6\u6784\u7EC4${colors.reset}      ${colors.blue}${config.team}${colors.reset}`
                 );
               }
               if (config.owner) {
                 console.log(
-                  `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u8D1F\u8D23\u4EBA${colors.reset}       ${colors.blue}${config.owner}${colors.reset}`
+                  `   ${colors.blue}\u25CF${colors.reset} ${colors.white}\u8D1F\u8D23\u4EBA${colors.reset}      ${colors.blue}${config.owner}${colors.reset}`
                 );
               }
             }
@@ -340,7 +349,12 @@ function viteConsolePlugin(options = {}) {
             console.log(`${colors.gray}${"\u2500".repeat(50)}${colors.reset}`);
             console.log("");
             state.hasShownWelcome = true;
-          }, 350);
+          };
+          if (server.resolvedUrls) {
+            printBanner();
+          } else {
+            setTimeout(printBanner, 100);
+          }
         });
       }
     }

@@ -4,7 +4,7 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.0+-green.svg)](https://vitejs.dev/)
+[![Vite](https://img.shields.io/badge/Vite-4.0+-green.svg)](https://vitejs.dev/)
 
 ## ✨ 特性
 
@@ -13,7 +13,7 @@
 - 🚫 **原生信息屏蔽** - 智能屏蔽 Vite 原生的杂乱输出，保留重要开发信息
 - ⚡ **零配置使用** - 开箱即用，同时支持灵活的自定义配置
 - 📦 **自动版本读取** - 自动从 `package.json` 读取最新版本信息
-- 🌿 **Git 集成** - 显示当前分支和提交哈希，便于开发调试
+- 🌿 **Git 集成** - 显示当前分支状态、远程同步情况和提交哈希
 - 🛡️ **团队协作** - 支持团队信息、警告提示等协作功能
 - 🔄 **配置重载提醒** - 配置文件更改时提供友好的重载提示
 
@@ -63,7 +63,8 @@ export default defineConfig({
       owner: 'CHENY',
       warning: '请勿随意修改配置文件',
       security: '禁止部署未加密的敏感数据',
-      autoVersion: true
+      autoVersion: true,
+      devtools: 'Vue DevTools & UnoCSS Inspector'
     })
   ]
 })
@@ -80,6 +81,7 @@ export default defineConfig({
 | `warning` | `string` | `'请勿随意修改配置文件'` | 协作警告信息 |
 | `security` | `string` | `'禁止部署未加密的敏感数据'` | 安全警告信息 |
 | `autoVersion` | `boolean` | `true` | 是否自动读取 package.json 版本 |
+| `devtools` | `string` | `''` | 开发工具提示，留空则不显示 |
 
 ## 🎨 输出效果
 
@@ -88,17 +90,17 @@ export default defineConfig({
 ```
 ──────────────────────────────────────────────────
 
-🚀 Robot_Admin 后台管理系统
+🤖 Robot_Admin 后台管理系统
 
 ⚡ 服务器信息
-   ● 本地访问   http://localhost:3000/
-   ● 网络访问   http://192.168.1.100:3000/
+   ● 本地访问   http://localhost:5173/
+   ● 网络访问   http://192.168.1.100:5173/
    ● 开发工具   Vue DevTools & UnoCSS Inspector
 
 📦 项目信息
    ● 版本号       v1.2.3
-   ● 启动时间     2025-08-01 10:30:45
-   ● Git 分支     main
+   ● 启动时间     2026-03-31 10:30:45
+   ● Git 分支     main (与远程同步 ✅)
    ● 提交哈希     a1b2c3d
 
 👥 团队信息
@@ -125,10 +127,10 @@ export default defineConfig({
 
 插件会自动获取以下信息：
 
-- **版本号**: 从 `package.json` 自动读取，失败时默认为 `1.0.0`
-- **Git 分支**: 通过 `git rev-parse --abbrev-ref HEAD` 获取当前分支
-- **Git 提交**: 通过 `git rev-parse --short HEAD` 获取最新提交的短哈希
-- **服务器地址**: 自动获取本地和网络访问地址
+- **版本号**: 从 `package.json` 自动读取（基于 Vite `root` 路径解析，支持 monorepo）
+- **Git 分支**: 获取当前分支及与远程分支的同步状态（领先/落后/分叉）
+- **Git 提交**: 获取最新提交的短哈希
+- **服务器地址**: 优先使用 Vite 解析后的实际地址
 - **启动时间**: 服务器启动的具体时间（中文格式）
 
 ### 智能信息屏蔽
@@ -151,119 +153,25 @@ export default defineConfig({
 - `dependencies optimized` - 依赖优化完成
 - 所有错误和警告信息
 
-### 颜色和图标系统
-
-插件使用丰富的 ANSI 颜色和 Unicode 图标：
-
-**颜色方案：**
-- 🟢 绿色：成功状态和本地地址
-- 🔵 蓝色：信息和网络地址  
-- 🟡 黄色：警告和提交信息
-- 🔴 红色：安全警告
-- 🟣 紫色：开发工具和分支信息
-- ⚪ 白色：标题和重要信息
-- 🔘 灰色：分隔线和次要信息
-
-**图标系统：**
-- 🚀 系统启动
-- 📦 项目信息
-- 👥 团队信息
-- ⚠️ 重要提醒
-- ⚡ 服务器状态
-- 🛡️ 安全提醒
-
-## 🎯 最佳实践
-
-### 团队协作配置
-
-```typescript
-viteConsolePlugin({
-  systemName: 'TeamProject',
-  description: '团队协作项目',
-  team: 'Frontend Team',
-  owner: '项目负责人',
-  warning: '修改配置前请通知团队成员',
-  security: '生产环境注意数据安全',
-  autoVersion: true
-})
-```
-
-### 个人项目配置
-
-```typescript
-viteConsolePlugin({
-  systemName: 'Personal Project',
-  description: '个人开发项目',
-  owner: 'Your Name',
-  autoVersion: true,
-  // 个人项目可以简化警告信息
-  warning: '注意代码规范',
-  security: '保护敏感信息'
-})
-```
-
-### 最小化配置
-
-```typescript
-viteConsolePlugin({
-  systemName: 'Simple App'
-  // 其他选项将使用默认值
-})
-```
-
-## 🛠️ 技术实现
-
-### 核心特性
-
-- **Logger 重写**: 通过重写 `server.config.logger.info/warn` 实现信息拦截
-- **Console 拦截**: 同时拦截 `console.log/info/warn` 确保完整屏蔽
-- **状态管理**: 使用 `globalThis.__vite_console_plugin_state__` 避免多实例重复输出
-- **延迟显示**: 使用 350ms 延迟确保服务器完全启动后再显示信息
-- **正则匹配**: 通过多个正则表达式精确匹配需要屏蔽的信息模式
-- **错误处理**: 所有外部命令调用都有完善的错误处理机制
-
-### 消息过滤逻辑
-
-```typescript
-// 屏蔽判断 - 清理 ANSI 颜色代码后进行模式匹配
-function shouldBlockMessage(msg: string): boolean {
-  const cleanMsg = msg.replace(/\x1b\[[0-9;]*m/g, '').trim();
-  // 匹配多种屏蔽模式...
-}
-
-// 重要信息判断 - 保留对开发有价值的信息
-function isImportantDevMessage(msg: string): boolean {
-  // 匹配构建时间、HMR更新等重要信息...
-}
-```
-
 ### 兼容性
 
-- ✅ Vite 3.0+
+- ✅ Vite 4.0+
 - ✅ Node.js 16+
 - ✅ TypeScript 完整支持
 - ✅ Windows / macOS / Linux
 - ✅ 支持 pnpm / yarn / npm
 
-## 🔧 开发调试
-
-### 插件只在开发模式生效
-
-```typescript
-export default function viteConsolePlugin(): Plugin {
-  return {
-    name: "vite-console-plugin",
-    apply: "serve", // 只在 vite dev 时生效
-    // ...
-  }
-}
-```
-
-### 禁用清屏功能
-
-插件会自动设置 `clearScreen: false` 以保持输出的连续性。
-
 ## 📝 更新日志
+
+### v2.1.0
+- 🔧 新增 `devtools` 配置项，不再硬编码开发工具信息
+- 🐛 修复 Git commit 数 ≥10 时状态判断错误
+- 🐛 修复 `package.json` 路径解析在 monorepo 下不准确的问题
+- 🔒 使用 `execFileSync` 替代 `execSync`，消除 shell 注入风险
+- ⚡ 优化服务器地址获取，优先使用 Vite resolvedUrls
+- ♻️ 服务器关闭时自动恢复被劫持的 console 方法
+- 🗑️ 移除循环自身依赖和未使用的代码
+- 📦 exports 新增 TypeScript 类型入口
 
 ### v1.0.0
 - 🎉 初始版本发布

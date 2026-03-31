@@ -1,6 +1,7 @@
 import type { Plugin } from "vite";
 import { readFileSync } from "fs";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
+import path from "path";
 
 declare global {
   // 避免多实例重复输出
@@ -15,6 +16,7 @@ export interface PluginOptions {
   warning?: string;
   security?: string;
   autoVersion?: boolean;
+  devtools?: string;
 }
 
 export const defaultPluginOptions: Required<PluginOptions> = {
@@ -25,12 +27,15 @@ export const defaultPluginOptions: Required<PluginOptions> = {
   warning: "请勿随意修改配置文件",
   security: "禁止部署未加密的敏感数据",
   autoVersion: true,
+  devtools: "",
 };
 
 // 获取版本信息
-const getVersionInfo = () => {
+const getVersionInfo = (root: string) => {
   try {
-    const packageJson = JSON.parse(readFileSync("package.json", "utf-8"));
+    const packageJson = JSON.parse(
+      readFileSync(path.resolve(root, "package.json"), "utf-8")
+    );
     return packageJson.version || "1.0.0";
   } catch {
     return "1.0.0";
@@ -40,10 +45,10 @@ const getVersionInfo = () => {
 // 获取 Git 信息（增强版）
 const getGitInfo = () => {
   try {
-    const branch = execSync("git rev-parse --abbrev-ref HEAD")
+    const branch = execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"])
       .toString()
       .trim();
-    const commit = execSync("git rev-parse --short HEAD").toString().trim();
+    const commit = execFileSync("git", ["rev-parse", "--short", "HEAD"]).toString().trim();
     
     // 获取Git状态信息
     const gitStatus = getGitStatus(branch);
@@ -66,7 +71,7 @@ const getGitInfo = () => {
 const getGitStatus = (currentBranch: string): string => {
   try {
     // 检查是否有远程仓库
-    execSync("git remote", { stdio: 'pipe' });
+    execFileSync("git", ["remote"], { stdio: 'pipe' });
     
     let statusParts: string[] = [];
     
@@ -74,19 +79,19 @@ const getGitStatus = (currentBranch: string): string => {
     const remoteBranch = `origin/${currentBranch}`;
     try {
       // 检查远程分支是否存在
-      execSync(`git show-ref --verify --quiet refs/remotes/${remoteBranch}`, { stdio: 'pipe' });
+      execFileSync("git", ["show-ref", "--verify", "--quiet", `refs/remotes/${remoteBranch}`], { stdio: 'pipe' });
       
       // 获取本地相对于远程分支的状态
-      const behindCount = execSync(`git rev-list --count HEAD..${remoteBranch}`, { stdio: 'pipe' })
-        .toString().trim();
-      const aheadCount = execSync(`git rev-list --count ${remoteBranch}..HEAD`, { stdio: 'pipe' })
-        .toString().trim();
+      const behindCount = Number(execFileSync("git", ["rev-list", "--count", `HEAD..${remoteBranch}`], { stdio: 'pipe' })
+        .toString().trim());
+      const aheadCount = Number(execFileSync("git", ["rev-list", "--count", `${remoteBranch}..HEAD`], { stdio: 'pipe' })
+        .toString().trim());
       
-      if (behindCount === '0' && aheadCount === '0') {
+      if (behindCount === 0 && aheadCount === 0) {
         statusParts.push('与远程同步 ✅');
-      } else if (behindCount > '0' && aheadCount === '0') {
+      } else if (behindCount > 0 && aheadCount === 0) {
         statusParts.push(`落后远程 ${behindCount} 个提交 🔄`);
-      } else if (behindCount === '0' && aheadCount > '0') {
+      } else if (behindCount === 0 && aheadCount > 0) {
         statusParts.push(`领先远程 ${aheadCount} 个提交 ⬆️`);
       } else {
         statusParts.push(`分叉状态 🔀`);
@@ -102,10 +107,10 @@ const getGitStatus = (currentBranch: string): string => {
         // 检查origin/main是否存在
         let mainBranch = 'origin/main';
         try {
-          execSync(`git show-ref --verify --quiet refs/remotes/origin/main`, { stdio: 'pipe' });
+          execFileSync("git", ["show-ref", "--verify", "--quiet", "refs/remotes/origin/main"], { stdio: 'pipe' });
         } catch {
           try {
-            execSync(`git show-ref --verify --quiet refs/remotes/origin/master`, { stdio: 'pipe' });
+            execFileSync("git", ["show-ref", "--verify", "--quiet", "refs/remotes/origin/master"], { stdio: 'pipe' });
             mainBranch = 'origin/master';
           } catch {
             throw new Error('No main branch found');
@@ -113,20 +118,20 @@ const getGitStatus = (currentBranch: string): string => {
         }
         
         // 找到与main的共同祖先
-        const mergeBase = execSync(`git merge-base HEAD ${mainBranch}`, { stdio: 'pipe' })
+        const mergeBase = execFileSync("git", ["merge-base", "HEAD", mainBranch], { stdio: 'pipe' })
           .toString().trim();
-        const aheadOfMain = execSync(`git rev-list --count ${mergeBase}..HEAD`, { stdio: 'pipe' })
-          .toString().trim();
-        const behindMain = execSync(`git rev-list --count HEAD..${mainBranch}`, { stdio: 'pipe' })
-          .toString().trim();
+        const aheadOfMain = Number(execFileSync("git", ["rev-list", "--count", `${mergeBase}..HEAD`], { stdio: 'pipe' })
+          .toString().trim());
+        const behindMain = Number(execFileSync("git", ["rev-list", "--count", `HEAD..${mainBranch}`], { stdio: 'pipe' })
+          .toString().trim());
         
-        if (aheadOfMain === '0' && behindMain === '0') {
+        if (aheadOfMain === 0 && behindMain === 0) {
           statusParts.push('基于 main 最新代码 ✅');
-        } else if (aheadOfMain > '0') {
+        } else if (aheadOfMain > 0) {
           statusParts.push(`领先 main ${aheadOfMain} 个提交 ⬆️`);
         }
         
-        if (behindMain > '0') {
+        if (behindMain > 0) {
           statusParts[statusParts.length - 1] = statusParts[statusParts.length - 1].replace(' ⬆️', '') + ` (main 领先 ${behindMain} 个提交) 🔄`;
         }
         
@@ -155,23 +160,6 @@ const colors = {
   magenta: "\x1b[35m",
   white: "\x1b[37m",
   gray: "\x1b[90m",
-};
-
-// 图标定义
-const icons = {
-  rocket: "🚀",
-  package: "📦",
-  team: "👥",
-  user: "👨‍💻",
-  branch: "🌿",
-  commit: "🔗",
-  warning: "⚠️",
-  shield: "🛡️",
-  time: "🕐",
-  local: "🌐",
-  network: "📡",
-  devtools: "🔧",
-  inspector: "🔍",
 };
 
 // 精确判断是否应该屏蔽消息
@@ -293,6 +281,13 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
       const originalConsoleLog = console.log;
       const originalConsoleWarn = console.warn;
 
+      // 服务器关闭时恢复原始 console 方法
+      server.httpServer?.on('close', () => {
+        console.info = originalConsoleInfo;
+        console.log = originalConsoleLog;
+        console.warn = originalConsoleWarn;
+      });
+
       console.info = (...args) => {
         const msg = args.join(" ");
         if (isImportantDevMessage(msg)) {
@@ -325,9 +320,10 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
 
       if (!state.hasShownWelcome) {
         server.httpServer?.once("listening", () => {
-          setTimeout(() => {
+          // 等待 resolvedUrls 可用后再输出
+          const printBanner = () => {
             const version = config.autoVersion
-              ? getVersionInfo()
+              ? getVersionInfo(server.config.root)
               : config.systemName;
             const gitInfo = getGitInfo();
             const currentTime = new Date().toLocaleString("zh-CN", {
@@ -340,9 +336,7 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
             });
 
             // 获取服务器地址信息
-            const port = server.config.server.port || 3000;
-            const host = server.config.server.host || "localhost";
-            const localUrl = `http://${host}:${port}/`;
+            const localUrl = server.resolvedUrls?.local?.[0] || `http://localhost:${server.config.server.port || 5173}/`;
             const networkUrl =
               server.resolvedUrls?.network?.[0] || "需要 --host 参数启用";
 
@@ -373,9 +367,11 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
               );
             }
 
-            console.log(
-              `   ${colors.magenta}●${colors.reset} ${colors.white}开发工具${colors.reset}    ${colors.magenta}Vue DevTools & UnoCSS Inspector${colors.reset}`
-            );
+            if (config.devtools) {
+              console.log(
+                `   ${colors.magenta}●${colors.reset} ${colors.white}开发工具${colors.reset}    ${colors.magenta}${config.devtools}${colors.reset}`
+              );
+            }
             console.log("");
 
             // 项目信息
@@ -447,7 +443,14 @@ export default function viteConsolePlugin(options: PluginOptions = {}): Plugin {
             console.log("");
 
             state.hasShownWelcome = true;
-          }, 350);
+          };
+
+          // 使用短延迟确保 resolvedUrls 已填充
+          if (server.resolvedUrls) {
+            printBanner();
+          } else {
+            setTimeout(printBanner, 100);
+          }
         });
       }
     },

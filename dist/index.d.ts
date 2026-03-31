@@ -13,6 +13,7 @@ interface PluginOptions {
     warning?: string;
     security?: string;
     autoVersion?: boolean;
+    devtools?: string;
 }
 declare const defaultPluginOptions: Required<PluginOptions>;
 declare function viteConsolePlugin(options?: PluginOptions): Plugin;
