@@ -1,6 +1,6 @@
 {
   "name": "vite-console-plugin",
-  "version": "2.0.16",
+  "version": "2.0.17",
   "description": "Vite 启动台控制台美化与提示插件",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -18,11 +18,16 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "docs",
+    "README.md",
+    "LICENSE"
   ],
+  "sideEffects": false,
   "scripts": {
     "build": "tsup src/index.ts --dts --format cjs,esm",
-    "prepublishOnly": "npm run build"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run build"
   },
   "devDependencies": {
     "@types/node": "^24.1.0",
@@ -35,14 +40,26 @@
   },
   "keywords": [
     "vite",
+    "vite-plugin",
     "plugin",
     "console",
-    "banner"
+    "terminal",
+    "banner",
+    "dev-server",
+    "logger",
+    "git"
   ],
-  "author": "CHENY",
+  "author": "CHENY <ycyplus@gmail.com>",
   "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ycyplus/vite-console-plugin"
+    "url": "git+https://github.com/ChenyCHENYU/vite-console-plugin.git"
+  },
+  "homepage": "https://github.com/ChenyCHENYU/vite-console-plugin#readme",
+  "bugs": {
+    "url": "https://github.com/ChenyCHENYU/vite-console-plugin/issues"
   }
 }

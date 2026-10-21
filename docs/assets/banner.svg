@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340" fill="none" role="img" aria-label="vite-console-plugin banner">
+  <defs>
+    <linearGradient id="b-bg" x1="0" y1="0" x2="1200" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#171E3A"/>
+      <stop offset="1" stop-color="#0A0F20"/>
+    </linearGradient>
+    <linearGradient id="b-accent" x1="70" y1="78" x2="192" y2="178" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="0.55" stop-color="#818CF8"/>
+      <stop offset="1" stop-color="#C084FC"/>
+    </linearGradient>
+    <radialGradient id="b-glow-c" cx="230" cy="170" r="230" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22D3EE" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#22D3EE" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="b-glow-r" cx="1150" cy="40" r="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#C084FC" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#C084FC" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="b-rim" x1="0" y1="0" x2="0" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.02"/>
+    </linearGradient>
+    <pattern id="b-dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="1.2" cy="1.2" r="1.2" fill="#FFFFFF" fill-opacity="0.05"/>
+    </pattern>
+  </defs>
+
+  <!-- 底板 -->
+  <rect width="1200" height="340" rx="30" fill="url(#b-bg)"/>
+  <rect x="1" y="1" width="1198" height="338" rx="29" stroke="url(#b-rim)" stroke-width="2"/>
+  <rect x="1" y="1" width="1198" height="338" rx="29" fill="url(#b-dots)"/>
+  <circle cx="230" cy="170" r="230" fill="url(#b-glow-c)"/>
+  <circle cx="1150" cy="40" r="420" fill="url(#b-glow-r)"/>
+
+  <!-- Logo（与 logo.svg 同源的 >_ 标识） -->
+  <g transform="translate(86,86) scale(0.65625)">
+    <path d="M78 88 L132 132 L78 176" stroke="#05070F" stroke-opacity="0.5" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,6)"/>
+    <path d="M78 84 L132 128 L78 172" stroke="url(#b-accent)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="154" y="154" width="42" height="20" rx="7" fill="#05070F" fill-opacity="0.5" transform="translate(0,4)"/>
+    <rect x="154" y="152" width="42" height="20" rx="7" fill="url(#b-accent)"/>
+  </g>
+
+  <!-- 文字区 -->
+  <text x="316" y="150" fill="#F4F6FB" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="54" font-weight="700" letter-spacing="0.5">vite-console-plugin</text>
+  <text x="318" y="196" fill="#9AA3BC" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif" font-size="21">结构化启动信息 · 原生噪音过滤 · Git 状态感知 · 零配置</text>
+
+  <!-- 能力标签 -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14.5">
+    <rect x="316" y="224" width="104" height="32" rx="16" fill="#FFFFFF" fill-opacity="0.06" stroke="#FFFFFF" stroke-opacity="0.16"/>
+    <text x="368" y="244.5" fill="#C7CDE0" text-anchor="middle">Vite ≥ 4</text>
+    <rect x="432" y="224" width="118" height="32" rx="16" fill="#FFFFFF" fill-opacity="0.06" stroke="#FFFFFF" stroke-opacity="0.16"/>
+    <text x="491" y="244.5" fill="#C7CDE0" text-anchor="middle">TypeScript</text>
+    <rect x="562" y="224" width="126" height="32" rx="16" fill="#FFFFFF" fill-opacity="0.06" stroke="#FFFFFF" stroke-opacity="0.16"/>
+    <text x="625" y="244.5" fill="#C7CDE0" text-anchor="middle">serve-only</text>
+    <rect x="700" y="224" width="130" height="32" rx="16" fill="#FFFFFF" fill-opacity="0.06" stroke="#FFFFFF" stroke-opacity="0.16"/>
+    <text x="765" y="244.5" fill="#C7CDE0" text-anchor="middle">ESM / CJS</text>
+  </g>
+
+  <!-- 署名 -->
+  <text x="1128" y="308" fill="#626A85" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace" font-size="14" text-anchor="end">by CHENY · github.com/ChenyCHENYU</text>
+</svg>
