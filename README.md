@@ -22,12 +22,13 @@ Vite 启动时会输出 `Local` / `Network` / `press h + enter` / 各类 DevTool
 
 ## 特性
 
-- 🎛️ **单条结构化启动面板** —— 服务器信息 / 项目信息 / 团队信息 / 重要提醒，分区呈现
-- 🔇 **原生噪音过滤** —— 屏蔽 Vite 的 Local / Network / 快捷键 / DevTools / UnoCSS 等提示行
-- 🌿 **Git 状态感知** —— 当前分支、短哈希，以及与远程分支、与 `main` 的领先 / 落后 / 分叉状态
-- 📦 **自动版本读取** —— 读取 Vite `root` 下 `package.json` 的版本号，monorepo 场景准确生效
+- 🎛️ **单条结构化启动面板** —— 服务器信息 / 项目信息 / 团队与提醒，分区呈现、中英混排严格对齐
+- 🔇 **原生噪音过滤** —— 屏蔽 Vite 的 Local / Network / 快捷键 / DevTools / UnoCSS 提示行，支持 `blockPatterns` 追加自定义规则
+- 🌿 **Git 状态感知** —— 分支、短哈希，与远程的领先 / 落后 / 分叉状态，非 main 分支附与 `main` 的对比
+- 📦 **零配置可用** —— `systemName` 留空自动读项目 `package.json` 的 `name`，版本号同样自动读取
+- ⚡ **零性能负担** —— 屏蔽规则合并为单条正则（单次判定约 36ns）；console 拦截仅存在于启动窗口期，之后完全还原；git 信息异步预取、不阻塞启动
 - 🛠️ **仅开发阶段生效** —— `apply: 'serve'`，`build` 产物零影响、零运行时依赖
-- 🧩 **TypeScript 开箱支持** —— 类型随包发布，ESM / CJS 双格式
+- 🔁 **配置重载提示** —— vite 配置热重启时给出轻量提示，面板不会重复刷屏
 
 ## 安装
 
@@ -49,121 +50,114 @@ import { defineConfig } from 'vite'
 import viteConsolePlugin from 'vite-console-plugin'
 
 export default defineConfig({
-  plugins: [
-    viteConsolePlugin({
-      systemName: 'My App',
-      description: '业务管理平台',
-      owner: 'Your Name',
-    }),
-  ],
+  plugins: [viteConsolePlugin()],
 })
 ```
 
-启动 `vite`，原生启动信息即被替换为结构化面板（完整效果见[输出效果](#输出效果)）。
+零配置即可工作：面板标题自动取项目 `package.json` 的 `name`，版本号自动读取，Git 状态自动探测。
 
-### 完整配置示例
+要展示团队与提醒信息，传入对应字段：
 
 ```typescript
-import { defineConfig } from 'vite'
-import viteConsolePlugin from 'vite-console-plugin'
-
 export default defineConfig({
   plugins: [
     viteConsolePlugin({
-      systemName: 'Robot_Admin',          // 系统名称
-      description: '后台管理系统',         // 系统描述
-      team: 'AGILE|TEAM',                 // 团队名称
-      owner: 'CHENY',                     // 负责人
-      warning: '请勿随意修改配置文件',      // 协作警告（留空隐藏）
-      security: '禁止部署未加密的敏感数据', // 安全警告（留空隐藏）
-      autoVersion: true,                  // 自动读取 package.json 版本
-      devtools: 'Vue DevTools & UnoCSS Inspector', // 开发工具提示（留空隐藏）
+      systemName: 'Robot_Admin',           // 留空则自动读 package.json 的 name
+      description: '后台管理系统',           // 留空隐藏
+      team: 'AGILE|TEAM',                  // 留空隐藏
+      owner: 'CHENY',                      // 留空隐藏
+      warning: '请勿随意修改配置文件',        // 留空隐藏
+      security: '禁止部署未加密的敏感数据',   // 留空隐藏
+      devtools: 'Vue DevTools',            // 留空隐藏
+      blockPatterns: [/^\[my-plugin\]/],  // 追加自定义屏蔽规则（可选）
     }),
   ],
 })
 ```
-
-> 💡 所有字段均有默认值，但默认值偏内部团队风格，建议在项目里**显式配置** `systemName` / `description` / `owner` 等字段，输出才是你自己的信息。
 
 ## 配置选项
 
 | 选项 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `systemName` | `string` | `'Robot_Admin'` | 面板标题中的系统名称 |
-| `description` | `string` | `'后台管理系统'` | 系统描述，显示在标题旁 |
-| `team` | `string` | `'AGILE\|TEAM'` | 团队名称，留空隐藏该行 |
-| `owner` | `string` | `'CHENY'` | 项目负责人，留空隐藏该行 |
-| `warning` | `string` | `'请勿随意修改配置文件'` | 协作警告，留空隐藏该行 |
-| `security` | `string` | `'禁止部署未加密的敏感数据'` | 安全警告，留空隐藏该行 |
-| `autoVersion` | `boolean` | `true` | 是否自动读取 `package.json` 版本号 |
-| `devtools` | `string` | `''` | 开发工具提示（如 DevTools 地址），留空隐藏 |
+| `systemName` | `string` | `''` | 面板标题；留空自动读取 `package.json` 的 `name` |
+| `description` | `string` | `''` | 系统描述，显示在标题旁；留空隐藏 |
+| `team` | `string` | `''` | 团队名称；留空隐藏 |
+| `owner` | `string` | `''` | 项目负责人；留空隐藏 |
+| `warning` | `string` | `''` | 协作提醒（黄色）；留空隐藏 |
+| `security` | `string` | `''` | 安全提醒（红色）；留空隐藏 |
+| `autoVersion` | `boolean` | `true` | 是否自动读取并显示版本号 |
+| `devtools` | `string` | `''` | 开发工具提示（如 DevTools 说明）；留空隐藏 |
+| `blockPatterns` | `(string \| RegExp)[]` | `[]` | 追加的自定义屏蔽规则；字符串按正则源码解析，`RegExp` 保留 flags |
 
 ## 输出效果
 
 ```
-──────────────────────────────────────────────────
+────────────────────────────────────────────────────
+  ▍Robot_Admin · 后台管理系统
+────────────────────────────────────────────────────
+  本地访问  http://localhost:5173/
+  网络访问  http://192.168.1.100:5173/
+  开发工具  Vue DevTools
 
-🤖 Robot_Admin 后台管理系统
+  版本号    v1.2.3
+  Git       main · a1b2c3d · ✓ 与远程同步
+  启动时间  2026-10-21 10:30:45
+────────────────────────────────────────────────────
+  架构组    AGILE|TEAM
+  负责人    CHENY
 
-⚡ 服务器信息
-   ● 本地访问   http://localhost:5173/
-   ● 网络访问   http://192.168.1.100:5173/
-   ● 开发工具   Vue DevTools & UnoCSS Inspector
-
-📦 项目信息
-   ● 版本号      v1.2.3
-   ● 启动时间    2026-10-21 10:30:45
-   ● Git 分支    main (与远程同步 ✅)
-   ● 提交哈希    a1b2c3d
-
-👥 团队信息
-   ● 架构组      AGILE|TEAM
-   ● 负责人      CHENY
-
-⚠️  重要提醒
-   ● 请勿随意修改配置文件
-   ● 禁止部署未加密的敏感数据
-
-✨ 启动成功！ 开发服务器已就绪
-──────────────────────────────────────────────────
+  提醒      请勿随意修改配置文件
+            禁止部署未加密的敏感数据
+────────────────────────────────────────────────────
 ```
 
-**Git 分支状态**的取值：
+未启用的信息自动隐藏（如未配置团队则不渲染该区块；未开 `server.host` 时网络访问显示灰色提示）。
+
+**Git 状态**的取值：
 
 | 显示 | 含义 |
 |------|------|
-| `main (与远程同步 ✅)` | 与 `origin/main` 完全一致 |
-| `main (落后远程 3 个提交 🔄)` | 本地落后远程分支 |
-| `main (领先远程 2 个提交 ⬆️)` | 本地领先远程分支 |
-| `feature/x (分叉状态 🔀)` | 本地与远程均有新提交 |
-| `feature/x (本地分支 📱)` | 远程不存在同名分支 |
-| `main (离线状态 📱)` | git 不可用或非 git 仓库 |
+| `main · a1b2c3d · ✓ 与远程同步` | 与上游分支完全一致 |
+| `main · a1b2c3d · ↑ 领先远程 2 个提交` | 本地领先远程 |
+| `main · a1b2c3d · ↓ 落后远程 3 个提交` | 本地落后远程 |
+| `feat/x · a1b2c3d · ↕ 与远程分叉 ↑1 ↓2` | 双方均有新提交 |
+| `feat/x · a1b2c3d · ○ 本地分支（无上游）` | 远程不存在同名分支 |
+| `HEAD (detached)` | 分离头指针状态 |
+| `✗ git 不可用` | 非 git 仓库或 git 不可用 |
 
-在非 `main` / `master` 分支上，还会追加与 `main` 的对比信息（如 `基于 main 最新代码 ✅`、`领先 main N 个提交`）。
+非 `main` / `master` 分支还会追加与 `main` 的对比（如 `· 领先 main 3`、`· 落后 main 2`）。
 
 ## 工作原理
 
 插件仅在 dev server 阶段（`apply: 'serve'`）生效：
 
-1. **关闭清屏** —— 设置 `clearScreen: false`，保住面板不被后续输出冲掉
-2. **包装 Vite logger** —— `info` / `warn` 输出先经过滤规则再放行；`error` 原样输出
-3. **包装 Node `console`** —— `info` / `log` / `warn` 同样经过滤规则；dev server 关闭时自动还原
+1. **关闭清屏** —— 通过插件 `config` 钩子返回 `clearScreen: false`
+2. **包装 Vite logger** —— `info` / `warn` 先过屏蔽规则再放行；`error` 原样输出；配置热重启（`server restarted`）时追加一行轻量提示
+3. **启动窗口期兜底 console** —— 部分插件直接用 `console.log` 打印提示，插件在启动窗口期（`configResolved` 起，banner 后约 1.2s 止，最长 8s）临时包装 `console` 的 `log` / `info` / `warn`，窗口结束**完全还原**，稳态零开销
+4. **Git 信息异步预取** —— `configResolved` 即并发执行 `git status -sb` 与 `git rev-parse --short HEAD`（以 vite root 为工作目录），banner 打印时通常已就绪；单命令 1.5s 超时兜底，永不阻塞事件循环
 
 **屏蔽的输出**（Vite 原生启动噪音）：
 
 - `➜ Local: ...` / `➜ Network: use --host to expose`
 - `➜ press h + enter to show help`
-- Vue DevTools / UnoCSS Inspector 的地址与快捷键提示
+- Vue DevTools / UnoCSS Inspector 的地址与快捷键提示（含 `__devtools__` / `__unocss` 路径）
 
 **保留的输出**（真正影响开发的信号）：
 
-- `ready in Xms` / `built in Xms`
+- `VITE vx.x.x ready in Nms` / `built in Nms`
 - `hmr update` / `page reload`
 - `N modules transformed`
 - `optimizing dependencies` / `dependencies optimized`
 - 所有 error 与 warn
 
-> ⚠️ **注意**：对 `console` 的包装作用于整个 Node 进程。如果业务代码里恰好输出了与屏蔽规则匹配的文本（如 `Local: http://...`），同样会被过滤——请避免在应用日志中使用这类前缀。
+### 性能设计
+
+| 环节 | 开销 |
+|------|------|
+| 消息过滤 | 所有规则合并为单条正则、只检查首参，单次判定约 **36ns**（实测比逐条规则快一个数量级） |
+| console 包装 | 仅存在于启动窗口期（约 2.5s），之后还原为原生函数，稳态**零开销** |
+| git 探测 | 每进程最多 4 次异步子进程（并发执行、带超时），不阻塞启动；banner 最多等待 300ms |
+| 构建 | `apply: 'serve'`，`vite build` 完全不加载本插件，产物零运行时依赖 |
 
 ## FAQ
 
@@ -175,30 +169,41 @@ export default defineConfig({
 </details>
 
 <details>
-<summary><b>monorepo 里版本号读取的是哪个 package.json？</b></summary>
+<summary><b>monorepo 里版本号 / git 读取的是哪个目录？</b></summary>
 
-读取 Vite `root`（启动目录）下的 `package.json`。子包内启动 dev server 时即读子包版本，符合预期。
+均以 Vite `root`（启动配置的项目根）为准：版本读 `root/package.json`，git 命令以 `root` 为工作目录执行。无论从 monorepo 根还是子包启动都符合预期。
 
 </details>
 
 <details>
 <summary><b>修改配置触发重启后，为什么不再次打印面板？</b></summary>
 
-设计如此：面板每个进程只完整输出一次，重启后只会看到 `server restarted` 等常规信息，避免刷屏。
+设计如此：面板每个进程只完整输出一次，重启后只会看到 `server restarted` 与一行轻量提示，避免刷屏。
 
 </details>
 
 <details>
 <summary><b>屏蔽规则可以自定义吗？</b></summary>
 
-当前版本内置规则、不开放配置。如有需要欢迎提 [Issue](https://github.com/ChenyCHENYU/vite-console-plugin/issues)。
+可以。传入 `blockPatterns` 追加规则，字符串按正则源码解析（如 `'^\\[vite-plugin-x\\]'`），`RegExp` 对象保留自身 flags：
+
+```typescript
+viteConsolePlugin({ blockPatterns: [/^\[my-plugin\]/, '^\\[noise\\]'] })
+```
+
+</details>
+
+<details>
+<summary><b>会影响启动速度或开发期性能吗？</b></summary>
+
+不会。git 信息在配置解析阶段异步预取，banner 打印最多等待 300ms（超时降级为「git 不可用」）；消息过滤为单次正则判定（纳秒级）；console 包装在启动窗口后完全还原——日常 HMR 与应用日志走的是原生函数。
 
 </details>
 
 <details>
 <summary><b>会影响生产构建吗？</b></summary>
 
-不会。插件 `apply: 'serve'`，仅 dev server 阶段注册；`vite build` 完全不经过本插件，产物无任何运行时依赖。
+不会。插件 `apply: 'serve'`，仅 dev server 阶段注册；`vite build` 完全不经过本插件。
 
 </details>
 
@@ -206,7 +211,7 @@ export default defineConfig({
 
 | 项目 | 要求 |
 |------|------|
-| Vite | `>= 4.0.0`（peer dependency，4 / 5 / 6 / 7 均可） |
+| Vite | `>= 4.0.0`（peer dependency，4 ~ 8 实测可用） |
 | Node.js | `>= 18` |
 | 模块格式 | ESM / CJS 双格式，TypeScript 类型内置 |
 | 平台 | macOS / Windows / Linux |
